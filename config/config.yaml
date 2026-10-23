@@ -112,6 +112,11 @@ osm:
 suitability:
   class_quantiles: [0.9, 0.7, 0.4]     # S1 >= q90, S2 >= q70, S3 >= q40, else N
   min_patch_area_m2: 10000
+  # weight of similarity_knn in the combined score (rf_change gets 1 - w), chosen on the
+  # 2020/21 training label of the validation run (src/suitability/score.py)
+  weight_grid: [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+  top_n_sites: 20                      # candidate sites listed in the report and map
+  top_site_min_area_ha: 5              # ... among patches this large (half the S1 patches are single cells)
 
 mcda:                        # MCDA / AHP baseline, src/suitability/mcda.py (P7.3, FR-7.1)
   # criteria rescaled to 0-1 (1 = most suitable), physical units
