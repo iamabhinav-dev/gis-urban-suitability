@@ -54,9 +54,9 @@ Everything runs from [config/config.yaml](config/config.yaml) and the study-area
 `config/aoi.geojson`. One command runs every stage:
 
 ```bash
-python -m src.pipeline                     # download → … → maps; ~12 min after the downloads
+python -m src.pipeline                     # download → … → maps; ~15 min after the downloads
 python -m src.pipeline --from-stage classify --to-stage suitability   # part of it
-python -m src.pipeline --with-sensitivity  # also the sensitivity analysis (cell size, slope, k)
+python -m src.pipeline --skip-sensitivity  # without the sensitivity analysis (a few minutes faster)
 python -m src.pipeline --dry-run           # list the steps
 ```
 

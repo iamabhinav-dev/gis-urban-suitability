@@ -169,10 +169,10 @@ def test_pipeline_plan():
     assert [s for s, _ in steps][0] == "download" and [s for s, _ in steps][-1] == "viz"
     part = pl.plan("features", "classify")
     assert {s for s, _ in part} == {"features", "labels", "classify"}
-    assert ("suitability", pl.SENSITIVITY) in pl.plan(
-        "suitability", "suitability", sensitivity=True
-    )
-    assert ("suitability", pl.SENSITIVITY) not in pl.plan("suitability", "suitability")
+    # sensitivity runs by default (FR-8.7; charts and notebook 06 read it), unless skipped
+    assert ("suitability", pl.SENSITIVITY) in pl.plan("suitability", "suitability")
+    off = pl.plan("suitability", "suitability", sensitivity=False)
+    assert ("suitability", pl.SENSITIVITY) not in off
     with pytest.raises(ValueError):
         pl.plan("nope")
     with pytest.raises(ValueError):
@@ -206,3 +206,27 @@ def test_to_wgs84_bounds_contain_the_aoi(cfg):
     w, s, e, n = cfg.aoi.to_crs(4326).total_bounds
     (south, west), (north, east) = b
     assert south <= s and west <= w and north >= n and east >= e and arr.size > 0
+
+
+def test_charts_skip_a_figure_whose_input_is_missing(cfg, monkeypatch):
+    """Regression (P8.11): a fresh clone without sensitivity.json crashed the viz stage."""
+    from src.viz import charts
+
+    def missing(c):
+        raise FileNotFoundError("sensitivity.json")
+
+    monkeypatch.setattr(charts, "k_scan", missing)
+    others = (
+        "cluster_profiles",
+        "class_areas",
+        "rf_importance",
+        "roc",
+        "sensitivity",
+        "holdout",
+        "toc",
+        "growth_type",
+        "ablation_chart",
+    )
+    for name in others:
+        monkeypatch.setattr(charts, name, lambda c: None)
+    assert charts.make_all(cfg) == []  # no crash; the missing figure is skipped

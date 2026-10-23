@@ -13,13 +13,15 @@ start at any stage):
 7. ``suitability`` MCDA, combined score and classes, candidate sites, validation harness
 8. ``viz``         static maps, charts, interactive map
 
-Optional: ``--with-sensitivity`` adds the sensitivity analysis after ``suitability``
-(it rebuilds the features at 50 and 200 m, a few extra minutes).
+The sensitivity analysis (cell size, slope threshold, k; PRD FR-8.7) runs after
+``suitability`` by default (it rebuilds the features at 50 and 200 m, a few extra minutes);
+``--skip-sensitivity`` leaves it out.
 
 Each step runs as ``python -m <module>`` in a subprocess with this interpreter; stage and
 step timings go to the log and to ``outputs/metrics/pipeline.json``.
 
-Run: python -m src.pipeline [--from-stage features] [--to-stage suitability] [--dry-run]
+Run: python -m src.pipeline [--from-stage features] [--to-stage suitability]
+                          [--skip-sensitivity] [--dry-run]
 """
 
 from __future__ import annotations
@@ -70,7 +72,7 @@ SENSITIVITY = ["src.suitability.sensitivity"]
 
 
 def plan(
-    start: str | None = None, stop: str | None = None, sensitivity: bool = False
+    start: str | None = None, stop: str | None = None, sensitivity: bool = True
 ) -> list[tuple[str, list[str]]]:  # noqa: E501
     """(stage, command) steps from ``start`` to ``stop`` inclusive."""
     names = list(STAGES)
@@ -119,12 +121,14 @@ def main(argv: list[str] | None = None) -> None:
     )
     parser.add_argument("--from-stage", choices=list(STAGES))
     parser.add_argument("--to-stage", choices=list(STAGES))
-    parser.add_argument("--with-sensitivity", action="store_true")
+    parser.add_argument(
+        "--skip-sensitivity", action="store_true", help="leave out the sensitivity analysis"
+    )
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args(argv)
     cfg = load_config()
     setup_logging(cfg, "pipeline")
-    steps = plan(args.from_stage, args.to_stage, args.with_sensitivity)
+    steps = plan(args.from_stage, args.to_stage, not args.skip_sensitivity)
     timings = run(steps, Path(cfg.root), args.dry_run)
     if not args.dry_run:
         timings.update(from_stage=args.from_stage or "download", to_stage=args.to_stage or "viz")

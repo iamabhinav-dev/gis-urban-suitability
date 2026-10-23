@@ -434,7 +434,13 @@ def make_all(cfg) -> list[Path]:
     figs = [k_scan, cluster_profiles, class_areas, rf_importance, roc, sensitivity, holdout]
     if (Path(cfg.paths["metrics"]) / "validation.json").exists():
         figs += [toc, growth_type, ablation_chart]
-    return [p for p in (f(cfg) for f in figs) if p is not None]
+    out = []
+    for f in figs:
+        try:
+            out.append(f(cfg))
+        except FileNotFoundError as exc:  # an optional input (e.g. sensitivity.json) not built
+            log.warning("%s skipped: %s", f.__name__, exc)
+    return [p for p in out if p is not None]
 
 
 def main() -> None:
