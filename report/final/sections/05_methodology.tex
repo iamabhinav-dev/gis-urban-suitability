@@ -1,4 +1,113 @@
-% Owner: Harsh (P8.6): features, clustering, similarity, suitability
+% Methodology (P8.6)
 \section{Methodology}\label{sec:methodology}
 
-\todo{Harsh (P8.6): features, clustering, similarity, suitability}
+The analysis runs as one pipeline (\texttt{python -m src.pipeline}). Every stage reads and
+writes files with a fixed schema, and every parameter lives in \texttt{config/config.yaml}.
+
+\subsection{Analysis grid and features}
+
+The study area plus a \SI{3}{\km} buffer is divided into \SI{100}{\m} cells aligned with the
+\SI{10}{\m} raster grid, so every cell holds exactly $10\times10$ land-cover pixels. The
+58{,}218 cells whose centres lie inside the study area are analysed. For each cell and year
+the feature table holds:
+\begin{itemize}
+  \item \textbf{own-cell land cover}: the shares of water, trees, flooded vegetation, crops,
+        built area, bare ground and rangeland among its 100 pixels;
+  \item \textbf{context rings}: the same shares in square rings of \SI{250}{\m} and
+        \SI{500}{\m} around the cell, \emph{excluding} the cell itself;
+  \item \textbf{distances} from the cell centre to the nearest built-up pixel outside the cell,
+        to water, to a major road and to any road (log-transformed, capped at \SI{3}{\km}, the
+        buffer width, so that edge cells see everything within the cap);
+  \item \textbf{road density}: road length within \SI{500}{\m} per km\textsuperscript{2};
+  \item \textbf{terrain}: mean elevation, mean and maximum slope;
+  \item building count and footprint share (kept for analysis only).
+\end{itemize}
+
+\textbf{Leakage rule.} A model trained to recognise built land could simply read it from the
+cell's own land cover, whose shares sum to one minus the built share, or from its buildings.
+In a prototype, own-cell shares alone separated built from non-built cells perfectly. The
+similarity and the random forests therefore use only the context features: rings, distances,
+road density and terrain (20 inputs). The code refuses any other column.
+
+\subsection{Land classification}
+
+K-Means \citep{pedregosa2011} groups the cells on seven standardised inputs: the shares of water,
+trees, crops, built area and rangeland, mean elevation and mean slope. (Snow is absent and
+flooded vegetation and bare ground are almost always zero; maximum slope correlates at
+$r=0.95$ with mean slope.) The number of clusters is chosen from $k=3$ to 10 with inertia, the
+silhouette \citep{rousseeuw1987} and the Davies--Bouldin index \citep{davies1979}; Gaussian
+mixtures are compared. Clusters become classes by rules on their centroids:
+water-dominated $\rightarrow$ excluded; built-up if built land exceeds 30\,\% and is the largest
+land group; forest if trees exceed 50\,\%, or trees and rangeland together exceed 50\,\% on
+slopes above \ang{8} (the Bannerghatta scrub forest, which the ESRI map partly calls rangeland);
+otherwise usable, with cropland flagged as agricultural.
+
+The \textbf{exclusion mask} is applied last, cell by cell: more than half of the cell is water,
+flooded vegetation or snow in either year of the run, or an OSM lake; mean slope above
+\ang{15}; more than half no-data; or more than half inside a protected area.
+
+\subsection{Building similarity}
+
+\paragraph{Reference buildings.} Cells with an OpenStreetMap building, plus ESRI built cells
+where OSM has none: OSM maps 62--75\,\% of built cells in the north but about 1\,\% in the south
+in 2018, so OSM alone would describe only northern surroundings.
+
+\paragraph{Profiles.} A location's profile is its cell's 20 context features, standardised with
+the mean and standard deviation of the reference and candidate cells of the run.
+
+\paragraph{Single query.} For building A, every usable cell is ranked by the Euclidean distance
+between its profile and A's (cosine distance is available for comparison). Each result lists
+the features where B is closest to A and the ones where it differs most, in standard deviations.
+
+\paragraph{Aggregate similarity.} For every candidate cell, the mean distance to its ten nearest
+reference profiles, never counting the cell itself, is rescaled to 0--1 between the 1st and
+99th percentile (higher = more similar).
+
+\subsection{Learned models}
+
+Two random forests \citep{breiman2001} use the 20 context features of 2018:
+\begin{itemize}
+  \item the \textbf{change RF} learns from the cells that were non-built in 2018 and 2019 and
+        became built in 2020 and 2021 (355 positives among 15{,}658 candidates);
+  \item the \textbf{state RF} learns built vs non-built cells in 2018 (for comparison).
+\end{itemize}
+Both are class-balanced (300 trees). Hyperparameters are tuned by spatial cross-validation
+\citep{roberts2017, valavi2019}: cells are grouped into \SI{2}{\km} blocks, which are dealt into
+five folds, so no block is in both training and test data. Tuning uses only the training label.
+Features enter as percentiles within their year, because OSM road mapping grew a lot between
+the 2018 and current snapshots; within a year the transform keeps each tree's partition of its
+training data. Importance is reported both by impurity and by permutation on the held-out folds.
+
+\subsection{MCDA / AHP baseline}
+
+The classic overlay rescales five criteria to 0--1: distance to built-up land (1 next to it, 0
+beyond \SI{2}{\km}), distance to a major road (0 beyond \SI{3}{\km}), slope (0 at \ang{15}),
+own-cell land cover (rangeland and bare ground 1, crops 0.6, trees 0.2) and a water setback (0
+within \SI{100}{\m}, 1 beyond \SI{200}{\m}). Weights come from an AHP pairwise matrix
+\citep{saaty1980}: built-up and road distance 0.30 each, slope and land cover 0.16 each, water
+0.09, with a consistency ratio of 0.003. MCDA is not trained, so its use of own-cell land cover
+is not the leakage problem above.
+
+\subsection{Combined score, classes and candidate sites}
+
+The final score is a weighted mean of the aggregate similarity and the change RF. Each is first
+converted to its percentile among the scored cells, because the two have very different
+distributions. The weight is chosen on the validation run, but on the change RF's training label
+(growth by 2020/21), never on the later growth used for validation, and then frozen: 0.3 for the
+similarity and 0.7 for the change RF.
+
+Usable cells are classed by quantiles of the score: S1 at least the 90th percentile, S2 the 70th,
+S3 the 40th, otherwise N. Forest, built-up and excluded land is always N. Edge-adjacent S1 cells
+are merged into candidate patches of at least \SI{1}{\hectare}, each with its area, mean score,
+slope, distances and land cover. The top sites are the 20 best patches of at least
+\SI{5}{\hectare}.
+
+\subsection{Implementation}
+
+Everything is written in Python: rasterio and GeoPandas for the data, scikit-learn for the
+models, Matplotlib and Folium for the maps; OpenStreetMap data comes through OSMnx
+\citep{boeing2017}. Each stage has unit tests on synthetic data, a phase gate on the real data,
+and an independent check script that recomputes its output another way (for example pixel
+values against the source rasters, brute-force distances, or AUC from ranks). The whole pipeline
+runs in about 12 minutes after the first download, and a fresh clone reproduces the validation
+run exactly.

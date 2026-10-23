@@ -1,4 +1,39 @@
-% Owner: both (P8.7)
+% Conclusion and future work (P8.7)
 \section{Conclusion and future work}\label{sec:conclusion}
 
-\todo{both (P8.7)}
+This project built a land suitability analysis for urban development in Bengaluru South
+entirely in Python, from open land-cover, terrain and OpenStreetMap data, and tested every
+method against the growth that actually happened. It answers the three questions it set out
+with:
+
+\begin{enumerate}
+  \item \textbf{Land classes.} Clustering 100\,m cells on land-cover shares and terrain gives
+        seven interpretable clusters, mapped to built-up (348\,km\textsuperscript{2} in 2023),
+        forest (29\,km\textsuperscript{2}, including the steep scrub forest of Bannerghatta) and
+        usable land (138\,km\textsuperscript{2}). The map agrees with the ESRI classes on
+        96.6\,\% of land cells.
+  \item \textbf{Building similarity.} For any building, the usable locations whose surroundings
+        look most like its own can be found and explained feature by feature. Averaged over
+        reference buildings, this similarity predicts growth from 2018 to 2022/23 with
+        AUC 0.773, without ever seeing a growth label.
+  \item \textbf{Suitability.} Combining the similarity with a random forest trained on recent
+        change gives the best score (AUC 0.797; the top 10\,\% of cells hold 3.45 times their
+        share of growth), clearly ahead of a classic AHP overlay (0.636) and ahead of the
+        distance to built-up land (0.763). The final map grades usable land into classes
+        S1--S3 and lists the 20 best candidate sites.
+\end{enumerate}
+
+The main lesson is about validation: strict rules against leakage (no own-cell land cover, data
+frozen at the baseline date, out-of-fold scores) turn near-perfect accuracies into honest ones,
+and simple baselines show how much of the signal is just ``next to existing built-up land''.
+
+\paragraph{Future work.}
+\begin{itemize}
+  \item Add drivers of growth away from the built-up edge: planned layouts, industrial estates,
+        land prices, distance to the city centre and to employment.
+  \item Re-run the analysis with newer years as they become available, moving the baseline
+        forward to test whether the models generalise in time.
+  \item Use building footprints from other sources (e.g. Open Buildings) to type buildings, so
+        that similarity can be computed per building type.
+  \item Test finer grids with a growth label defined independently of the cell size.
+\end{itemize}

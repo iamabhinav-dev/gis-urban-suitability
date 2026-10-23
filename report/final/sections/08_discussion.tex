@@ -1,4 +1,49 @@
-% Owner: both (P8.7); the misses and limitations in docs/validation.md section 7 are a starting point
+% Discussion and limitations (P8.7)
 \section{Discussion and limitations}\label{sec:discussion}
 
-\todo{both (P8.7); the misses and limitations in docs/validation.md section 7 are a starting point}
+\paragraph{Learned scores beat the expert overlay, but not by much against the simplest rule.}
+The combined score improves on distance to built-up land by 0.034 AUC and on the classic AHP
+overlay by 0.161. The first gap is modest because growth in Bengaluru South is overwhelmingly
+edge expansion: 92\,\% of the grown cells touch land that was already built in 2018, and a single
+distance already ranks such cells well. The value of the learned scores lies in the ranking
+\emph{among} cells next to built-up land, where they add the composition of the neighbourhood
+(how much built-up, cropland and scrub lies within 250 and \SI{500}{\m}) and terrain. Our AUC
+is close to the 0.82 reported for a random forest tested on later change in Rasht
+\citep{ahmadlou2016}, and far below the near-perfect values of studies that validate on a
+random split of a single date \citep{li2024}: the difference comes from how the test is set
+up, not from a better model.
+
+\paragraph{Why the expert overlay does worse than one of its own criteria.} Only one of the five
+MCDA criteria carries real signal on its own. The pairwise comparisons are internally
+consistent (CR 0.003), but consistency says nothing about relevance: they put 70\,\% of the
+weight on criteria that are close to random for this question. This is the subjectivity
+\citet{malczewski2004} and \citet{mosadeghi2015} warn about, made measurable by a temporal test.
+
+\paragraph{Similarity without labels works.} The building similarity never sees a growth label,
+yet it predicts growth almost as well as the random forest trained on recent change (0.773 vs
+0.779), and their combination is better than either. It also explains itself: each match
+comes with the features where A and B agree and where they differ, which a planner can check.
+
+\paragraph{Outlying growth is not predicted.} No score does better than chance for growth away
+from existing built-up land, as \citet{wang2021} found for diffusional growth. Such growth
+follows decisions the data do not record: land deals, new industrial estates, approvals.
+
+\paragraph{Limitations.}
+\begin{itemize}
+  \item \textbf{Land-cover data.} ESRI and WorldCover disagree on built-up land (62\,\% vs
+        33\,\% of the area): ESRI generalises urban areas, and it calls part of the
+        Bannerghatta forest rangeland \citep{venter2022}. Growth labels inherit its errors; the
+        two-year rule removes flicker but not systematic bias.
+  \item \textbf{OpenStreetMap.} Road mapping more than doubled between the snapshots, mostly
+        through mapping effort, so each run uses its own snapshot. OSM buildings were sparse in
+        the south in 2018 \citep{herfort2023} and almost none are typed, so similarity per
+        building type was not possible.
+  \item \textbf{Resolution.} The 100\,m cells mix land uses; half of the top-class patches are
+        single cells inside built-up areas. Cell size changes the growth label itself, so
+        results at different resolutions are not directly comparable.
+  \item \textbf{Past growth is not good planning.} Every score learns where building
+        \emph{has} happened. Water, steep slopes and the national park are excluded, but
+        zoning, flood risk, infrastructure capacity and ownership are not in the data. The
+        suitability map shows where growth is \emph{likely}, as an input to planning, not a
+        recommendation.
+\end{itemize}

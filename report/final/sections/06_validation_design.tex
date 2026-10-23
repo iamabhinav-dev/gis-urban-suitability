@@ -1,4 +1,58 @@
-% Owner: Harsh (P8.6)
+% Validation design (P8.6)
 \section{Validation design}\label{sec:validation_design}
 
-\todo{Harsh (P8.6)}
+The question is not whether a score reproduces today's land cover, which is easy, but whether
+it would have pointed to the land that was built on next. Every score is therefore computed
+twice.
+
+\paragraph{Two runs.} The \textbf{validation run} uses only data available in 2019 or earlier:
+ESRI land cover of 2018, OpenStreetMap as of 1 January 2018, reference buildings of 2018, and a
+three-class map and exclusion mask built from 2018 and 2019. Its scores are tested against the
+growth that followed. The \textbf{final run} applies the same models to the latest data (2023
+land cover, OSM as of 1 October 2026) to produce the suitability map. Two layers are treated as
+static and used in both runs: the DEM, and the boundary of the national park.
+
+\paragraph{Growth labels.} ESRI land cover flickers between years: only 35--49\,\% of the pixels
+that turn built in one year stay built. Labels therefore require two years at each end. A
+\textbf{candidate} cell has a built share below 10\,\% in both 2018 and 2019 and is not
+excluded. It \textbf{grew} if its built share is at least 50\,\% in both 2022 and 2023.
+Candidates that end up in between, or flicker, are left out (2{,}881 cells). This gives
+12{,}777 candidate cells, of which 1{,}125 grew (8.8\,\%). Each grown cell is also typed by the
+landscape expansion index \citep{liu2010lei}: \emph{adjacent} growth touches built-up land
+that existed in 2018, \emph{outlying} growth does not.
+
+\paragraph{Leakage rules.}
+\begin{itemize}
+  \item No model sees a cell's own land cover or buildings (Section~\ref{sec:methodology}).
+  \item Nothing dated after 2019 feeds a validation-run score.
+  \item The change RF learns from growth by 2020/21, and most of those cells also count as
+        growth by 2022/23. Its validation scores are therefore \textbf{out of fold}: each cell
+        is scored by a model trained without its \SI{2}{\km} block. In-sample scores would
+        reach AUC 0.997.
+  \item The combined score's weight is chosen on the 2020/21 label, not on the test label.
+\end{itemize}
+
+\paragraph{Metrics.} One harness scores every model the same way:
+\begin{itemize}
+  \item ROC-AUC on the 12{,}777 candidate cells;
+  \item precision, recall and \textbf{lift} (precision divided by the 8.8\,\% growth rate) in
+        the top 10\,\% and 30\,\% of scores;
+  \item the total operating characteristic \citep{pontius2014}, as reported by
+        \citet{ahmadlou2016};
+  \item AUC separately for adjacent and outlying growth;
+  \item for the combined score, the share of growth that falls in classes S1 and S2.
+\end{itemize}
+Random scores and the distance to built-up land are always reported next to the models: in a
+prototype, distance to built-up alone reached AUC 0.75, so it is the bar to beat. The targets set
+in advance were a best model at least as good as this baseline and a lift of at least 2 in the
+top 10\,\%.
+
+\paragraph{Further checks.}
+\begin{itemize}
+  \item \textbf{Ablation:} each feature group is dropped in turn.
+  \item \textbf{Held-out buildings:} reference cells hidden by spatial block must be ranked high
+        by the rest.
+  \item \textbf{Self-query:} querying a building must return its own location near the top.
+  \item \textbf{Sensitivity:} the analysis is repeated with slope thresholds of \ang{10} and
+        \ang{20}, $k=5$ to 8, and cells of 50 and \SI{200}{\m}.
+\end{itemize}

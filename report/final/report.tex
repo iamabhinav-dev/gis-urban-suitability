@@ -41,7 +41,19 @@
 \maketitle
 
 \begin{abstract}
-\todo{abstract, written by both once the Phase 7 results are in}
+Where can new urban development reasonably go? We answer this question for a
+582\,km\textsuperscript{2} area of south Bengaluru, India, entirely in Python, from open
+10\,m land-cover maps (2018--2023), a 30\,m DEM and OpenStreetMap. Land is classified into
+built-up, forest and usable by K-Means clustering of 100\,m cells (96.6\,\% agreement with the
+source classes). For any existing building, the usable cells whose surroundings (land cover in
+250 and 500\,m rings, distances to built-up land, roads and water, terrain) are most similar
+are found and explained. A building-similarity score and a random forest trained on recent
+change are combined into a suitability score, graded into classes and grouped into candidate
+sites. Every score is computed with data as of 2018 and tested against land that became built
+in both 2022 and 2023, under strict leakage rules and next to simple baselines. The combined score
+reaches an AUC of 0.797 (top-decile lift 3.45), ahead of the distance to built-up land (0.763)
+and a classic AHP overlay (0.636); its two best classes hold 65\,\% of the growth. Growth next
+to existing built-up land is predicted well, growth away from it not at all.
 \end{abstract}
 
 \tableofcontents

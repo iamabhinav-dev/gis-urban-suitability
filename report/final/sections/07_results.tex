@@ -1,5 +1,4 @@
-% Owners: Abhinav (P8.7: land classification, MCDA, learned models, sensitivity);
-%         Harsh (P8.7: building similarity, suitability map and validation results)
+% Results (P8.7)
 \section{Results}\label{sec:results}
 
 \subsection{Land classification}\label{sec:res-classification}
@@ -69,6 +68,175 @@ cluster rules don't distort them. Against the independent WorldCover map the agr
   \label{fig:class-areas}
 \end{figure}
 
+\subsection{Building similarity}\label{sec:res-similarity}
+
+\paragraph{Single-building queries.} Figure~\ref{fig:queries} shows two of the four example
+queries from notebook~05, for a school and an industrial building. The most similar usable cells
+lie at the edges of the built-up area, often several kilometres from A, wherever the mix of
+built-up land, roads and terrain in the 250 and \SI{500}{\m} rings matches A's. Each result
+comes with an explanation: for the industrial building's best match, the distances to built-up
+land, water and a major road differ by less than 0.1 standard deviations, while the built-up
+share within \SI{250}{\m} differs most (0.6 standard deviations: 80\,\% instead of 100\,\%). Land-cover shares that are zero at
+both cells are listed last, since such matches say nothing. Euclidean and cosine distance share
+14--18 of the top 20 cells; cosine ignores how extreme a profile is, so it is kept only as a
+comparison.
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\textwidth]{map_similarity_query_school_1019}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\textwidth]{map_similarity_query_industrial_274244}
+  \end{subfigure}
+  \caption{Building similarity queries: the 20 usable cells whose surroundings are most similar
+           to a school (left) and an industrial building (right), A marked with a star.}
+  \label{fig:queries}
+\end{figure}
+
+\paragraph{Sanity checks.} For 200 random buildings, a cell within one cell of the building is in
+the top 1\,\% of all cells even when the building's own cell is left out: surroundings vary
+smoothly in space, so the profile identifies its location. Reference cells held out by
+\SI{2}{\km} block are ranked above the other cells with AUC 0.895 by the nearest-neighbour
+similarity, 0.984 by a random forest and 0.887 by distance to built-up alone. Keeping both ring
+scales beats the \SI{500}{\m} rings alone (0.895 vs 0.871).
+
+\paragraph{Aggregate similarity.} Averaged over the ten nearest reference profiles, the similarity
+of every candidate cell reaches \textbf{AUC 0.773} on the growth by 2022/23
+(Table~\ref{tab:auc}), above distance to built-up land, although it never sees a growth label.
+
+\subsection{Learned models}\label{sec:res-rf}
+
+The \textbf{change RF} reaches \textbf{AUC 0.779}, slightly above distance to built-up land
+(Table~\ref{tab:auc}). Its most important input is the built-up share within \SI{500}{\m},
+followed by trees and crops nearby and the distance to built-up land; terrain and water add
+little (Figure~\ref{fig:importance}). Scored on its own training cells, it would claim AUC
+0.997: most of its 2020/21 positives also grew by 2022/23, so in-sample scores would leak the
+answer, and out-of-fold scoring is essential. The \textbf{state RF} separates built from
+non-built cells almost perfectly (spatial-CV AUC 0.998), but that skill does not transfer to
+predicting the next growth (0.702).
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.85\textwidth]{chart_rf_importance}
+  \caption{What the change RF relies on: permutation importance (AUC drop on held-out folds) and
+           impurity importance.}
+  \label{fig:importance}
+\end{figure}
+
+\subsection{Combined score, classes and candidate sites}\label{sec:res-suitability}
+
+The weight chosen on the 2020/21 training label is 0.3 for the similarity and 0.7 for the change
+RF. In the final run, the 13{,}814 usable cells fall into 1{,}382 S1, 2{,}762 S2, 4{,}144 S3 and
+5{,}526 N cells (Figure~\ref{fig:suitability}). Highly suitable land concentrates on the southern
+and eastern fringe of the built-up area, along the Hosur Road corridor, and in the low western
+valley.
+
+Merging edge-adjacent S1 cells gives 557 candidate patches covering 1{,}382\,ha; 253 are mostly
+cropland and flagged as agricultural. Half of the patches are single \SI{1}{\hectare} cells,
+often pockets inside built-up areas, so the top sites are taken from patches of at least
+\SI{5}{\hectare}. The 20 top sites (Table~\ref{tab:sites}, 138\,ha) are all gently sloping
+(\ang{1}--\ang{4}), directly next to existing built-up land, and covered by rangeland or crops.
+None of them overlaps an OSM lake (0.06\,ha in total) or the national park.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.72\textwidth]{map_suitability_classes}
+  \caption{Suitability classes in the final run (2023 data) with the outlines of the candidate
+           patches. Forest, built-up and excluded land is always N.}
+  \label{fig:suitability}
+\end{figure}
+
+\begin{table}[ht]
+  \centering\small
+  \caption{The ten best candidate sites (patches of at least \SI{5}{\hectare}, ranked by mean
+           score). Distances are means over the patch's cells.}
+  \label{tab:sites}
+  \begin{tabular}{@{}rrrrrrll@{}}
+    \toprule
+    Rank & Area (ha) & Score & Slope (\textdegree) & Major road (m) & Built-up (m) & Cover & Location \\
+    \midrule
+    1 & 5 & 0.98 & 1.9 & 371 & 56 & rangeland & 77.64\,E, 12.86\,N \\
+    2 & 6 & 0.98 & 1.6 & 1{,}621 & 55 & rangeland & 77.69\,E, 12.78\,N \\
+    3 & 5 & 0.97 & 1.9 & 226 & 55 & crops & 77.73\,E, 12.86\,N \\
+    4 & 5 & 0.97 & 3.9 & 572 & 57 & rangeland & 77.53\,E, 12.90\,N \\
+    5 & 6 & 0.96 & 1.8 & 358 & 55 & rangeland & 77.71\,E, 12.76\,N \\
+    6 & 6 & 0.96 & 1.6 & 161 & 55 & rangeland & 77.70\,E, 12.86\,N \\
+    7 & 7 & 0.96 & 1.5 & 503 & 55 & rangeland & 77.66\,E, 12.76\,N \\
+    8 & 6 & 0.96 & 1.5 & 1{,}265 & 55 & crops & 77.67\,E, 12.79\,N \\
+    9 & 6 & 0.96 & 1.4 & 331 & 55 & rangeland & 77.71\,E, 12.74\,N \\
+    10 & 5 & 0.95 & 1.3 & 412 & 61 & rangeland & 77.73\,E, 12.79\,N \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Validation of all scores}\label{sec:res-validation}
+
+Table~\ref{tab:auc} compares every score on the same 12{,}777 candidate cells, of which 1{,}125
+were built in both 2022 and 2023. The \textbf{combined score} is the best: AUC 0.797, and its top
+10\,\% of cells contain 3.45 times as much growth as a random tenth. Both PRD targets are met
+(best model at least as good as distance to built-up; lift of at least 2 in the top 10\,\%). The
+S1 and S2 classes of the validation run hold 65\,\% of the growth on 25\,\% of the evaluated
+cells.
+
+\begin{table}[ht]
+  \centering\small
+  \caption{Validation run: every score computed with 2018 data, tested on persistent growth by
+           2022/23 (12{,}777 candidate cells, 1{,}125 grew). RF scores are out of fold.}
+  \label{tab:auc}
+  \begin{tabular}{@{}lccccc@{}}
+    \toprule
+    Score & AUC & Lift top 10\,\% & Lift top 30\,\% & AUC adjacent & AUC outlying \\
+    \midrule
+    Combined score & \textbf{0.797} & \textbf{3.45} & \textbf{2.40} & \textbf{0.822} & 0.512 \\
+    Change RF & 0.779 & 3.23 & 2.27 & 0.803 & 0.512 \\
+    Building similarity & 0.773 & 2.99 & 2.22 & 0.796 & 0.511 \\
+    Distance to built-up (baseline) & 0.763 & 3.04 & 2.15 & 0.792 & 0.439 \\
+    State RF & 0.702 & 3.29 & 1.92 & 0.722 & 0.484 \\
+    MCDA / AHP & 0.636 & 1.86 & 1.64 & 0.655 & 0.420 \\
+    MCDA without land cover & 0.614 & 1.73 & 1.46 & 0.630 & 0.430 \\
+    Random & 0.499 & 1.00 & 1.02 & 0.501 & 0.477 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\textwidth]{chart_roc}
+    \caption{ROC curves.}\label{fig:roc}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.49\textwidth}
+    \includegraphics[width=\textwidth]{chart_toc}
+    \caption{Total operating characteristic.}\label{fig:toc}
+  \end{subfigure}
+  \caption{Predicting growth from 2018.}
+\end{figure}
+
+\paragraph{Growth type.} Every score finds growth next to existing built-up land well (AUC
+0.79--0.82 for the best ones) but growth away from it only at chance level (0.51); distance to
+built-up and MCDA even fall below chance there (Figure~\ref{fig:growth-type}). This matches the
+finding that diffusional growth is much harder to predict than aggregated growth
+\citep{wang2021}. Only 91 of the 1{,}125 grown cells are outlying, so this hardly moves the
+overall AUC.
+
+\paragraph{Ablation.} Dropping the built-up context (built-up shares in the rings and distance to
+built-up) costs the most: $-0.034$ AUC for the change RF and $-0.057$ for the similarity
+(Figure~\ref{fig:ablation}). Roads and water add nothing once the built-up context is known.
+
+\begin{figure}[ht]
+  \centering
+  \begin{subfigure}[t]{0.52\textwidth}
+    \includegraphics[width=\textwidth]{chart_growth_type}
+    \caption{AUC by growth type.}\label{fig:growth-type}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.46\textwidth}
+    \includegraphics[width=\textwidth]{chart_ablation}
+    \caption{AUC change when a feature group is dropped.}\label{fig:ablation}
+  \end{subfigure}
+  \caption{Where the models succeed and what they rely on.}
+\end{figure}
+
 \subsection{MCDA / AHP baseline}\label{sec:res-mcda}
 
 The classic method uses five criteria, each rescaled to 0--1: distance to existing built-up land,
@@ -78,88 +246,13 @@ distance 0.30 each, slope and land cover 0.16 each and water 0.09. Its consisten
 is far below Saaty's 0.1 limit \citep{saaty1980}.
 
 Tested against persistent growth from 2018 to 2022/23, the overlay reaches \textbf{AUC 0.636}
-(Table~\ref{tab:auc}), below a single criterion, distance to built-up land (0.763). Scored one at
+(Table~\ref{tab:auc}), with a lift of only 1.86 in the top 10\,\%, below a single criterion, distance to built-up land (0.763). Scored one at
 a time, only that criterion carries real signal: slope reaches 0.612, and roads, land cover and
 water stay between 0.52 and 0.55, close to chance. The AHP weights give the weak criteria 70\,\%
 of the weight, which dilutes the one strong signal. We deliberately did not tune the weights on
 the growth label, which is the test set. A fixed, defensible expert overlay is exactly what this
 baseline stands for, and it illustrates the weakness the literature describes: the weights decide
 the map, and nothing checks them against outcomes \citep{malczewski2004}.
-
-\subsection{Learned models}\label{sec:res-rf}
-% Drafted by Abhinav (who built the models); Harsh to merge with the validation results.
-
-Two random forests \citep{breiman2001, pedregosa2011} learn from 2018 surroundings only: ring
-fractions at 250 and \SI{500}{\m}, distances, road density and terrain, never the cell's own land
-cover. The \textbf{change RF} learns from the 355 cells that were non-built in 2018 and 2019 but
-built in 2020 and 2021. The \textbf{state RF} learns built vs non-built in 2018. Hyperparameters
-are tuned by spatial cross-validation with \SI{2}{\km} blocks on the training label only, and
-every validation score comes from a model that never saw the cell's block.
-
-\begin{table}[ht]
-  \centering\small
-  \caption{AUC on persistent growth (validation run): 12{,}777 candidate cells, 1{,}125
-           of which grew by 2022/23. RF scores are out of fold.}
-  \label{tab:auc}
-  \begin{tabular}{@{}lc@{}}
-    \toprule
-    Score & AUC \\
-    \midrule
-    Change RF & \textbf{0.779} \\
-    Distance to built-up land (baseline) & 0.763 \\
-    State RF & 0.702 \\
-    MCDA / AHP & 0.636 \\
-    MCDA without land cover & 0.614 \\
-    Random & 0.500 \\
-    Building similarity, combined score & \todo{Harsh} \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-The change RF is the best score so far, but only just above distance to built-up land (+0.016;
-Figure~\ref{fig:roc}). Its most important input is the built-up share within \SI{500}{\m},
-followed by trees and crops nearby and the distance to built-up land; terrain and water add
-little (Figure~\ref{fig:importance}). Scored on its own training cells, it would claim AUC 0.997.
-Most of its 2020/21 positives also grew by 2022/23, so in-sample scores would leak the answer;
-out-of-fold scoring is essential. The state RF separates built from non-built cells almost
-perfectly (spatial-CV AUC 0.998), but that skill does not transfer to predicting the next growth
-(0.702).
-
-\begin{figure}[ht]
-  \centering
-  \begin{subfigure}[t]{0.45\textwidth}
-    \includegraphics[width=\textwidth]{chart_roc}
-    \caption{ROC curves.}\label{fig:roc}
-  \end{subfigure}\hfill
-  \begin{subfigure}[t]{0.53\textwidth}
-    \includegraphics[width=\textwidth]{map_score_rf_change_validation}
-    \caption{Change-RF score as of 2018 (out of fold).}
-  \end{subfigure}
-  \caption{Predicting growth from 2018.}
-\end{figure}
-
-\begin{figure}[ht]
-  \centering
-  \includegraphics[width=0.9\textwidth]{chart_rf_importance}
-  \caption{What the change RF relies on: permutation importance (AUC drop on held-out folds) and
-           impurity importance.}
-  \label{fig:importance}
-\end{figure}
-
-\paragraph{Held-out buildings.} Do surroundings identify building locations in areas a model never
-saw? With reference cells (OSM buildings, plus ESRI built cells where OSM has none) held out by
-\SI{2}{\km} block, a random forest ranks the held-out reference cells above the other cells with
-AUC 0.984. A nearest-neighbour similarity on the same inputs reaches 0.895, and distance to
-built-up alone reaches 0.887. Using both ring scales beats the \SI{500}{\m} rings alone (0.895 vs
-0.871).
-
-\subsection{Building similarity}\label{sec:res-similarity}
-
-\todo{Harsh (P8.7): example queries A $\to$ B, aggregate similarity map and its validation}
-
-\subsection{Suitability map and candidate sites}\label{sec:res-suitability}
-
-\todo{Harsh (P8.7): combined score, S1--S3 classes, candidate patches, lift, TOC, LEI split, ablation}
 
 \subsection{Sensitivity}\label{sec:res-sensitivity}
 
