@@ -1,6 +1,5 @@
 % Final presentation (P8.8). Build (twice): xelatex slides.tex
 % Figures come from outputs/figures (run python -m src.viz.static_maps and src.viz.charts first).
-% Frames marked [Harsh] are his to fill; each person presents the parts they built.
 \documentclass[aspectratio=169,11pt]{beamer}
 \usetheme[progressbar=frametitle,numbering=fraction]{metropolis}
 
@@ -29,7 +28,7 @@
 
 \maketitle
 
-% ------------------------------------------------------------------ both
+% ------------------------------------------------------------------
 \begin{frame}{Problem and approach}
   \small
   \begin{columns}[T]
@@ -56,7 +55,7 @@
   \end{columns}
 \end{frame}
 
-% ------------------------------------------------------------------ Abhinav
+% ------------------------------------------------------------------
 \begin{frame}{Study area and data}
   \footnotesize
   \begin{columns}[T]
@@ -80,14 +79,35 @@
   \end{columns}
 \end{frame}
 
-% ------------------------------------------------------------------ Harsh
+% ------------------------------------------------------------------
 \begin{frame}{Validation design and leakage rules}
-  \todo{Harsh: 2018 $\rightarrow$ 2022/23 persistent growth; time-travel rule; no own-cell
-  land cover in models; out-of-fold scores with 2\,km blocks; baselines random and distance to
-  built-up}
+  \small
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \textbf{Two runs}
+      \begin{itemize}
+        \item \hl{Validation run}: only data up to 2019 (LULC 2018, OSM 2018-01-01)
+              $\rightarrow$ tested on growth by 2022/23
+        \item \textbf{Final run}: same models on 2023 data $\rightarrow$ the map
+      \end{itemize}
+      \textbf{Persistent growth}: non-built in 2018 \emph{and} 2019, built in 2022
+      \emph{and} 2023\\[0.2em]
+      12,777 candidate cells, \hl{1,125 grew} (8.8\,\%)
+    \end{column}
+    \begin{column}{0.47\textwidth}
+      \textbf{Leakage rules}
+      \begin{itemize}
+        \item no model sees the cell's own land cover
+        \item nothing after 2019 feeds a 2018 score
+        \item trained models scored \hl{out of fold} (2\,km blocks)
+      \end{itemize}
+      \textbf{Always shown}: random and distance to built-up (the bar to beat)\\[0.2em]
+      \textbf{Metrics}: AUC, lift in the top 10\,\%, TOC, adjacent vs outlying growth
+    \end{column}
+  \end{columns}
 \end{frame}
 
-% ------------------------------------------------------------------ Abhinav
+% ------------------------------------------------------------------
 \begin{frame}{Land classification: clustering}
   \begin{columns}[T]
     \begin{column}{0.62\textwidth}
@@ -129,12 +149,29 @@
   \end{columns}
 \end{frame}
 
-% ------------------------------------------------------------------ Harsh
+% ------------------------------------------------------------------
 \begin{frame}{Building similarity: A $\rightarrow$ B}
-  \todo{Harsh: example query maps and per-feature explanation; aggregate kNN similarity}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \centering\includegraphics[width=\textwidth]{map_similarity_query_school_1019}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \small
+      \textbf{Profile}: land cover in 250 / 500\,m rings, distances to built-up, roads and
+      water, road density, terrain (never the cell itself)
+      \begin{itemize}
+        \item Query a building $\rightarrow$ top 20 \textcolor{usable}{\textbf{usable}} cells by
+              Euclidean distance
+        \item Each match explained: closest and most different features
+        \item Self-check: a building's own location is always in the top 1\,\%
+      \end{itemize}
+      \textbf{Aggregate}: mean distance to the 10 nearest building profiles\\
+      $\rightarrow$ \hl{AUC 0.773} on growth, without ever seeing a growth label
+    \end{column}
+  \end{columns}
 \end{frame}
 
-% ------------------------------------------------------------------ Abhinav
+% ------------------------------------------------------------------
 \begin{frame}{Learned models: predicting growth from 2018}
   \begin{columns}[T]
     \begin{column}{0.45\textwidth}
@@ -150,7 +187,8 @@
       \textbf{State RF} (built vs non-built): 0.998 on its own task, only 0.702 on growth
       \vspace{0.4em}
 
-      \textbf{Held-out buildings} (2\,km blocks): RF finds unseen building cells with AUC 0.98
+      \textbf{Held-out buildings} (2\,km blocks): RF finds unseen building cells with AUC 0.98\\[0.3em]
+      Combined with the similarity: \hl{AUC 0.797}
     \end{column}
   \end{columns}
 \end{frame}
@@ -201,12 +239,57 @@
   change RF $>$ distance to built-up $>$ MCDA.
 \end{frame}
 
-% ------------------------------------------------------------------ Harsh
+% ------------------------------------------------------------------
 \begin{frame}{Suitability map and candidate sites}
-  \todo{Harsh: combined score, S1--S3 classes, candidate patches; lift, TOC, LEI split}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \centering\includegraphics[width=\textwidth]{map_suitability_classes}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \small
+      \textbf{Combined score} = 0.3 $\times$ similarity + 0.7 $\times$ change RF
+      (weight chosen on the 2020/21 label, not the test label)
+      \begin{itemize}
+        \item Classes on usable land: S1 top 10\,\%, S2, S3, N
+        \item S1 cells merged into \textbf{557 patches} (1,382\,ha)
+        \item \hl{Top 20 sites} ($\geq$ 5\,ha): flat, next to built-up land, rangeland or crops;
+              none in a lake or the national park
+      \end{itemize}
+      Interactive map with all layers: \texttt{outputs/map.html}
+    \end{column}
+  \end{columns}
 \end{frame}
 
-% ------------------------------------------------------------------ both
+\begin{frame}{Validation: every score against real growth}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \centering\includegraphics[width=\textwidth]{chart_toc}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \footnotesize
+      \begin{tabular}{@{}lcc@{}}
+        \toprule
+        Score & AUC & Lift top 10\,\% \\
+        \midrule
+        \textbf{Combined} & \textbf{0.797} & \textbf{3.45} \\
+        Change RF & 0.779 & 3.23 \\
+        Similarity & 0.773 & 2.99 \\
+        Dist. to built-up & 0.763 & 3.04 \\
+        MCDA / AHP & 0.636 & 1.86 \\
+        Random & 0.50 & 1.00 \\
+        \bottomrule
+      \end{tabular}
+      \vspace{0.4em}
+      \begin{itemize}
+        \item S1 + S2 hold \hl{65\,\%} of the growth
+        \item Adjacent growth AUC 0.82; \textbf{outlying growth 0.51} (chance)
+        \item Built-up nearby carries the signal; roads and water add nothing
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
 \begin{frame}{Limitations}
   \small
   \begin{itemize}
@@ -222,7 +305,19 @@
 \end{frame}
 
 \begin{frame}{Conclusion}
-  \todo{both: one slide with the answers to the three questions}
+  \small
+  \begin{enumerate}
+    \item \textbf{Land classes}: K-Means (k = 7) $\rightarrow$
+          \textcolor{built}{\textbf{built-up}} 348, \textcolor{forest}{\textbf{forest}} 29,
+          \textcolor{usable}{\textbf{usable}} 138\,km\textsuperscript{2} (2023); 96.6\,\% agreement with ESRI
+    \item \textbf{Building similarity}: any building $\rightarrow$ similar usable locations,
+          explained; predicts growth (AUC 0.773) without labels
+    \item \textbf{Suitability}: the combined score (\hl{AUC 0.797}, lift 3.45) beats distance to
+          built-up (0.763) and a classic AHP overlay (0.636)
+  \end{enumerate}
+  \vspace{0.5em}
+  \textbf{Lesson}: honest validation (leakage rules, baselines) matters more than the model:
+  most of the signal is ``next to existing built-up land''; growth away from it is not predicted.
 \end{frame}
 
 \begin{frame}[standout]
