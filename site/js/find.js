@@ -5,22 +5,24 @@
 (function () {
   "use strict";
   const $ = (s) => document.querySelector(s);
-  const SUIT = { 1: ["S1", "var(--s1)"], 2: ["S2", "var(--s2)"], 3: ["S3", "var(--s3)"], 4: ["N", "var(--excluded)"] };
+  const SUIT = { 1: ["S1", "var(--s1)"], 2: ["S2", "var(--s2)"], 3: ["S3", "var(--s3)", "light"], 4: ["N", "var(--excluded)", "light"] };
   const CLASS = { 1: "built-up land", 2: "forest", 3: "usable land", 4: "excluded land (water, protected or steep)" };
   const COLOR = { a: "#eb6834", result: "#2a78d6", selected: "#0d366b" };
   const state = { model: null, a: -1, query: null, sel: -1 };
 
   // ---------------------------------------------------------------- map
   const map = L.map("map", { zoomSnap: 0.5 }).setView([12.83, 77.63], 11);
-  const gray = L.tileLayer(
-    "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
-    { maxNativeZoom: 16, maxZoom: 19, attribution: "Tiles &copy; Esri" }).addTo(map);
-  const imagery = L.tileLayer(
-    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-    { maxNativeZoom: 18, maxZoom: 19, attribution: "Imagery &copy; Esri, Maxar, Earthstar Geographics" });
+  const bases = Sheet.basemaps();
+  bases["Light gray"].addTo(map);
   const resultLayer = L.layerGroup().addTo(map);
   const aLayer = L.layerGroup().addTo(map);
-  const layers = L.control.layers({ "Light gray": gray, "Satellite imagery": imagery }, {}, { collapsed: true }).addTo(map);
+  const layers = L.control.layers(bases, {}, { collapsed: true }).addTo(map);
+  L.control.scale({ imperial: false, position: "bottomright" }).addTo(map);
+  Sheet.legend("Legend", [
+    ['class="o" style="background:#eb6834;box-shadow:0 0 0 1px #eb6834"', "A, your chosen place"],
+    ['class="o" style="background:#256abf;box-shadow:0 0 0 1px #256abf"', "Match, numbered by rank"],
+    ['style="background:rgba(109,167,236,.55)"', "Usable land (searched)"],
+  ]).addTo(map);
   map.attributionControl.addAttribution("&copy; OpenStreetMap contributors; land cover &copy; Impact Observatory, Microsoft, Esri");
 
   let toUtm, toLatLng;
@@ -45,8 +47,10 @@
       toLatLng = (x, y) => { const p = proj4("AOI", "WGS84", [x, y]); return [p[1], p[0]]; };
 
       const usable = L.imageOverlay("data/usable.png", meta.usable_overlay, { opacity: 1, interactive: false }).addTo(map);
-      const outline = L.geoJSON(aoi, { style: { color: "#52514e", weight: 1.5, fill: false, dashArray: "4 3" }, interactive: false }).addTo(map);
+      const outline = L.geoJSON(aoi, { style: { color: "#14212c", weight: 1.5, fill: false, dashArray: "5 4" }, interactive: false }).addTo(map);
+      const suit = L.imageOverlay("data/suitability.png", meta.suitability_overlay, { interactive: false });
       layers.addOverlay(usable, "Usable land (searched)");
+      layers.addOverlay(suit, "Suitability classes S1–S3");
       layers.addOverlay(outline, "Study area");
       map.fitBounds(outline.getBounds(), { padding: [10, 10] });
       renderExamples(meta.examples);
@@ -78,7 +82,7 @@
   function badge(i) {
     const s = SUIT[state.model.suit[state.model.pos[i]]];
     if (!s) return "";
-    return `<span class="badge" style="--c:${s[1]}" title="Suitability class ${s[0]}">${s[0]}</span>`;
+    return `<span class="badge${s[2] ? " light" : ""}" style="--c:${s[1]}" title="Suitability class ${s[0]}">${s[0]}</span>`;
   }
 
   function fmt(row, v) {
@@ -100,6 +104,7 @@
       b.type = "button";
       b.className = "chip";
       b.textContent = ex.label;
+      b.setAttribute("aria-pressed", "false");
       b.addEventListener("click", () => chooseLatLng(ex.lat, ex.lon, ex.label, true));
       box.appendChild(b);
     }
@@ -117,6 +122,7 @@
     state.a = i;
     state.aLabel = label;
     state.aLatLng = [lat, lon];
+    document.querySelectorAll("#examples .chip").forEach((c) => c.setAttribute("aria-pressed", String(c.textContent === label)));
     run(true, fly);
   }
 
@@ -144,7 +150,7 @@
     aLayer.clearLayers();
     L.polygon(cellCorners(a), { color: COLOR.a, weight: 2, fillOpacity: 0.35 }).addTo(aLayer);
     L.marker(state.aLatLng, {
-      icon: L.divIcon({ className: "pin pin-a", html: "A", iconSize: [28, 28] }),
+      icon: L.divIcon({ className: "pin pin-a", html: "<b>A</b>", iconSize: [30, 30] }),
       keyboard: false, title: "A",
     }).addTo(aLayer);
     const ex = SimilarCore.explain(m, a, a).rows;
@@ -156,8 +162,8 @@
     const card = $("#a-card");
     card.innerHTML = `
       <div class="a-head"><span class="pin pin-a static">A</span>
-        <div><b>${state.aLabel ? esc(state.aLabel) : "Your chosen place"}</b>
-        <div class="small muted">${state.aLatLng[0].toFixed(5)}° N, ${state.aLatLng[1].toFixed(5)}° E · ${CLASS[cls]}</div></div></div>
+        <div><b>${state.aLabel ? esc(state.aLabel) : "Your chosen place"}</b> <span class="muted small">· ${CLASS[cls]}</span>
+        <div class="coords">${state.aLatLng[0].toFixed(5)}° N, ${state.aLatLng[1].toFixed(5)}° E</div></div></div>
       <dl class="facts small">${facts}</dl>`;
     card.hidden = false;
   }
@@ -171,7 +177,7 @@
     res.forEach((r, k) => {
       const sq = L.polygon(cellCorners(r.i), { color: COLOR.result, weight: 1.5, fillOpacity: 0.5 }).addTo(resultLayer);
       const pin = L.marker(cellLatLng(r.i), {
-        icon: L.divIcon({ className: "pin", html: String(r.rank), iconSize: [24, 24] }),
+        icon: L.divIcon({ className: "pin pin-r", html: `<b>${r.rank}</b>`, iconSize: [24, 24] }),
         title: `Match ${r.rank}`, riseOnHover: true,
       }).addTo(resultLayer);
       sq.on("click", (e) => { L.DomEvent.stopPropagation(e); select(k, false); });
@@ -182,12 +188,12 @@
       const li = document.createElement("li");
       li.innerHTML = `
         <button type="button" class="result">
-          <span class="rank">${r.rank}</span>
+          <span class="rk">${r.rank}</span>
           <span class="body">
-            <span class="top"><b>${Math.round(r.similarity * 100)} % similar</b>${badge(r.i)}
-              <span class="muted">${r.km.toFixed(1)} km from A</span></span>
+            <span class="top"><span class="pct">${Math.round(r.similarity * 100)} %</span>${badge(r.i)}
+              <span class="km">${r.km.toFixed(1)} km from A</span></span>
             <span class="bar"><span style="width:${(r.similarity * 100).toFixed(1)}%"></span></span>
-            <span class="small muted">Closest on ${ex.closest.map((c) => esc(c.label)).join(", ")}</span>
+            <span class="why">Closest on ${ex.closest.map((c) => esc(c.label)).join(", ")}</span>
           </span>
         </button>`;
       li.querySelector("button").addEventListener("click", () => select(k, true));
@@ -201,6 +207,7 @@
     res.forEach((r, j) => {
       const on = j === k;
       r.layers[0].setStyle({ color: on ? COLOR.selected : COLOR.result, weight: on ? 3 : 1.5, fillOpacity: on ? 0.8 : 0.5 });
+      if (on) r.layers[1].setZIndexOffset(1000); else r.layers[1].setZIndexOffset(0);
       r.layers[1].getElement()?.classList.toggle("pin-selected", on);
     });
     document.querySelectorAll("#results .result").forEach((b, j) => b.setAttribute("aria-pressed", String(j === k)));
@@ -225,10 +232,10 @@
     }).join("");
     box.innerHTML = `
       <div class="compare-head">
-        <h2 class="h3">A compared with match ${r.rank}</h2>
+        <h2>A compared with match ${r.rank}</h2>
         <button type="button" class="linkish small" id="close-compare">Close</button>
       </div>
-      <p class="small muted" style="margin:0 0 8px">Match ${r.rank}: ${lat.toFixed(5)}° N, ${lon.toFixed(5)}° E ·
+      <p class="small muted" style="margin:0 0 8px"><span class="mono">${lat.toFixed(5)}° N, ${lon.toFixed(5)}° E</span> ·
         ${Math.round(r.similarity * 100)} % similar ${badge(r.i)} ·
         <a href="https://www.google.com/maps/@${lat.toFixed(5)},${lon.toFixed(5)},17z" target="_blank" rel="noopener">open in Google Maps</a></p>
       <p class="small" style="margin:0 0 8px"><b>Most different:</b> ${ex.different.map((d) => esc(d.label)).join(", ")}</p>

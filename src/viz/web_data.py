@@ -13,8 +13,9 @@ so the website runs it in the browser. This module exports what it needs, for th
 - ``meta.json``: lattice (origin, cell size, shape, proj4 string), columns with their
   scaling, the standardisation (mean / sd fitted on reference + usable cells, exactly as the
   Python query), readable labels and display units, the example buildings of notebook 05;
-- ``aoi.geojson`` (study-area outline) and ``usable.png`` (usable land, WGS84 bounds in
-  ``meta.json``).
+- ``aoi.geojson`` (study-area outline), ``sites.geojson`` (the top candidate sites) and the
+  overlays ``usable.png``, ``built.png``, ``suitability.png`` (classes S1-S3), with their WGS84
+  bounds in ``meta.json``.
 
 Run: python -m src.viz.web_data [--out outputs/site/data]
 """
@@ -39,6 +40,7 @@ from src.io_utils import setup_logging
 from src.similarity import profiles as pf
 from src.similarity.query import feature_label
 from src.suitability.score import classes_path
+from src.viz import style
 
 log = logging.getLogger(__name__)
 
@@ -116,14 +118,29 @@ def examples(cfg) -> list[dict]:
     return out
 
 
-def usable_overlay(cfg, path: Path) -> list[list[float]]:
-    """PNG of the usable cells (light blue, transparent elsewhere) in WGS84; returns its bounds."""
+def overlay(path: Path, out: Path, colors: dict[int, str], alpha: float) -> list[list[float]]:
+    """PNG of a class raster (listed codes coloured, others transparent) in WGS84; its bounds."""
     from src.viz.interactive import categorical_png, to_wgs84
 
-    arr, bounds = to_wgs84(Path(cfg.paths["outputs"]) / "lulc_3class.tif")
-    url = categorical_png(arr, {schema.CLASS_USABLE: "#6da7ec"}, alpha=0.45)
-    path.write_bytes(base64.b64decode(url.split(",", 1)[1]))
+    arr, bounds = to_wgs84(path)
+    url = categorical_png(arr, colors, alpha=alpha)
+    out.write_bytes(base64.b64decode(url.split(",", 1)[1]))
     return bounds
+
+
+SITE_COLUMNS = ["top_site_rank", "area_ha", "mean_score", "slope_deg", "dist_major_road_m",
+                "dist_built_m", "dominant_cover", "lon", "lat"]  # fmt: skip
+
+
+def top_sites(cfg, path: Path) -> int:
+    """The top candidate sites (``candidates.gpkg``) as WGS84 GeoJSON, ranked; returns how many."""
+    import geopandas as gpd
+
+    g = gpd.read_file(Path(cfg.paths["outputs"]) / "candidates.gpkg")
+    g = g.loc[g["top_site_rank"].notna(), [*SITE_COLUMNS, "geometry"]].sort_values("top_site_rank")
+    g = g.rename(columns={"top_site_rank": "rank"}).astype({"rank": int}).round(4)
+    g.to_crs(4326).to_file(path, driver="GeoJSON")
+    return len(g)
 
 
 def export(cfg, out: Path) -> dict:
@@ -170,7 +187,18 @@ def export(cfg, out: Path) -> dict:
         "trivial_share": 0.005,
     }
     meta["examples"] = examples(cfg)
-    meta["usable_overlay"] = usable_overlay(cfg, out / "usable.png")
+    outputs = Path(cfg.paths["outputs"])
+    meta["usable_overlay"] = overlay(
+        outputs / "lulc_3class.tif", out / "usable.png", {schema.CLASS_USABLE: "#6da7ec"}, 0.45
+    )
+    meta["built_overlay"] = overlay(
+        outputs / "lulc_3class.tif", out / "built.png", {schema.CLASS_BUILT: "#eb6834"}, 0.16
+    )
+    suit = {1: style.SEQ_BLUE[6], 2: style.SEQ_BLUE[4], 3: style.SEQ_BLUE[2]}
+    meta["suitability_overlay"] = overlay(
+        outputs / "suitability_class.tif", out / "suitability.png", suit, 0.9
+    )
+    meta["n_sites"] = top_sites(cfg, out / "sites.geojson")
     cfg.aoi.to_crs(4326).to_file(out / "aoi.geojson", driver="GeoJSON")
     (out / "meta.json").write_text(json.dumps(meta, indent=1))
     log.info(
