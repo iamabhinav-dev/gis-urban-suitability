@@ -5,7 +5,8 @@
 
 \usepackage{booktabs}
 \usepackage{graphicx}
-\graphicspath{{../../outputs/figures/}}
+\graphicspath{{../../outputs/figures/}{img/}}
+\newcommand{\livelink}{\href{https://iamabhinav-dev.github.io/gis-urban-suitability/}{\texttt{iamabhinav-dev.github.io/gis-urban-suitability}}}
 
 % same colours as the maps (src/viz/style.py)
 \definecolor{built}{HTML}{EB6834}
@@ -19,10 +20,9 @@
 \setlength{\leftmargini}{1.2em}
 
 \title{GIS-Based Land Suitability Analysis for Urban Development\\using Land Use Land Cover}
-\subtitle{Final presentation}
 \author{Harsh Chattar (22CS30028) \quad Abhinav (22CS30005)}
 \institute{CS60111 Geographical Information Systems}
-\date{October 2026}
+\date{October 2026\\[0.6em]\textbf{Live demo:} \livelink}
 
 \begin{document}
 
@@ -153,7 +153,7 @@
 \begin{frame}{Building similarity: A $\rightarrow$ B}
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
-      \centering\includegraphics[width=\textwidth]{map_similarity_query_school_1019}
+      \centering\includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{map_similarity_query_school_1019}
     \end{column}
     \begin{column}{0.48\textwidth}
       \small
@@ -255,7 +255,7 @@
         \item \hl{Top 20 sites} ($\geq$ 5\,ha): flat, next to built-up land, rangeland or crops;
               none in a lake or the national park
       \end{itemize}
-      Interactive map with all layers: \texttt{outputs/map.html}
+      Interactive map with all layers: \href{https://iamabhinav-dev.github.io/gis-urban-suitability/map.html}{\texttt{\dots/map.html}} (live demo)
     \end{column}
   \end{columns}
 \end{frame}
@@ -263,7 +263,7 @@
 \begin{frame}{Validation: every score against real growth}
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
-      \centering\includegraphics[width=\textwidth]{chart_toc}
+      \centering\includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{chart_toc}
     \end{column}
     \begin{column}{0.48\textwidth}
       \footnotesize
@@ -284,6 +284,27 @@
         \item S1 + S2 hold \hl{65\,\%} of the growth
         \item Adjacent growth AUC 0.82; \textbf{outlying growth 0.51} (chance)
         \item Built-up nearby carries the signal; roads and water add nothing
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Live demo}
+  \begin{columns}[T]
+    \begin{column}{0.6\textwidth}
+      \centering\href{https://iamabhinav-dev.github.io/gis-urban-suitability/find.html}{\includegraphics[width=\textwidth]{demo_find}}
+    \end{column}
+    \begin{column}{0.38\textwidth}
+      \footnotesize
+      \href{https://iamabhinav-dev.github.io/gis-urban-suitability/}{\texttt{iamabhinav-dev.github.io/}\\
+        \texttt{gis-urban-suitability}}
+      \begin{itemize}
+        \item \hl{Find places like A}: click any building $\rightarrow$ the 20 most similar
+              \textcolor{usable}{\textbf{usable}} cells, each explained feature by feature
+        \item Same answer as the Python query (checked on 30 buildings)
+        \item Suitability map with the \textbf{top 20 sites}, the full interactive map,
+              report and slides; the query runs in the browser
       \end{itemize}
     \end{column}
   \end{columns}
@@ -322,7 +343,8 @@
 
 \begin{frame}[standout]
   Thank you\\[0.5em]
-  \normalsize Questions?
+  \normalsize Questions?\\[1.2em]
+  \footnotesize Live demo: \livelink
 \end{frame}
 
 \end{document}

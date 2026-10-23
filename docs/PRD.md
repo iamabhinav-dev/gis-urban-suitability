@@ -876,7 +876,7 @@ Both tracks meet only through the contract files (§13). Each develops against t
 |---|---|---|
 | Q1 | Study area | **Closed:** Bengaluru South [D1], confirmed by Harsh 2026-10-01 |
 | Q2 | Submission deadline and intermediate reviews | **Closed:** final submission Tue 2026-10-06 |
-| Q3 | Report format / length required by the instructor | **Closed:** no format was given; the working default was delivered (20-page A4 PDF report, author–year references, 300 dpi figures; 16 slides) |
+| Q3 | Report format / length required by the instructor | **Closed:** no format was given; the working default was delivered (20-page A4 PDF report, author–year references, 300 dpi figures; 17 slides) |
 | Q4 | Grid cell size | **Closed:** 100 m; 50 / 200 m in the sensitivity runs |
 | Q5 | Cropland usable or excluded? | **Closed:** usable but flagged [D10] |
 | Q6 | Slope threshold | **Closed:** 15° [D10]; revisited in the sensitivity runs |

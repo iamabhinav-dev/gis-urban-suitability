@@ -46,7 +46,7 @@ The \textbf{exclusion mask} is applied last, cell by cell: more than half of the
 flooded vegetation or snow in either year of the run, or an OSM lake; mean slope above
 \ang{15}; more than half no-data; or more than half inside a protected area.
 
-\subsection{Building similarity}
+\subsection{Building similarity}\label{sec:similarity}
 
 \paragraph{Reference buildings.} Cells with an OpenStreetMap building, plus ESRI built cells
 where OSM has none: OSM maps 62--75\,\% of built cells in the north but about 1\,\% in the south
@@ -111,3 +111,12 @@ and an independent check script that recomputes its output another way (for exam
 values against the source rasters, brute-force distances, or AUC from ranks). The whole pipeline
 runs in about 12 minutes after the first download, and a fresh clone reproduces the validation
 run exactly.
+
+\paragraph{Live demo.} The results are also published as a static website:
+\begin{center}
+  \url{https://iamabhinav-dev.github.io/gis-urban-suitability/}
+\end{center}
+It shows the suitability map with the top 20 sites, an interactive map of every layer, and a
+``find places like A'' tool. The tool runs the single-building query of Section~\ref{sec:similarity}
+in the browser on the exported cell profiles; a check script confirms that it returns the same
+top 20 locations as the Python query.

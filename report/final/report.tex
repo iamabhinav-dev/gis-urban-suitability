@@ -29,13 +29,17 @@
 \newcommand{\SIrange}[3]{#1--#2\,#3}
 \newcommand{\ang}[1]{#1\textdegree}
 \captionsetup{font=small,labelfont=bf}
+% ragged-right table columns (justified narrow columns leave big gaps between words)
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
 \newcommand{\todo}[1]{\textcolor{red!70!black}{\textit{[To be added: #1]}}}
 
 \title{GIS-Based Land Suitability Analysis for Urban Development\\
        using Land Use Land Cover: Bengaluru South}
-\author{Harsh Chattar (22CS30028) \and Abhinav (22CS30005)\\[0.3em]
-  \small CS60111 Geographical Information Systems}
-\date{October 2026}
+\author{Harsh Chattar (22CS30028) \qquad Abhinav (22CS30005)\\[0.5em]
+  \normalsize CS60111 Geographical Information Systems}
+\date{October 2026\\[0.8em]
+  \small Live demo: \href{https://iamabhinav-dev.github.io/gis-urban-suitability/}{\texttt{iamabhinav-dev.github.io/gis-urban-suitability}}}
 
 \begin{document}
 \maketitle
@@ -56,6 +60,7 @@ and a classic AHP overlay (0.636); its two best classes hold 65\,\% of the growt
 to existing built-up land is predicted well, growth away from it not at all.
 \end{abstract}
 
+\newpage
 \tableofcontents
 \newpage
 
