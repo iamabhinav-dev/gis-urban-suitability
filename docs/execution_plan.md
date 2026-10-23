@@ -221,7 +221,7 @@ These are the only places the two tracks touch.
 
 **A9. Clean-up** · W10 · P8.9, P8.12
 - [x] A9.1 Own modules: docstrings, type hints, ruff + black clean · 🔓
-- [x] A9.2 Fix issues from Harsh's fresh-clone test · 🔒 **H9.1** · *P8.12: current OSM snapshot pinned, empty tags not retried*
+- [x] A9.2 Fix issues from Harsh's fresh-clone test · 🔒 **H9.1** · *P8.12: current OSM snapshot pinned, empty tags not retried* · *done by Abhinav (Tasks P8.11)*
 
 **Gate tests Abhinav writes** (checks Harsh's side of each phase)
 - [x] **G1** `tests/gates/test_phase1.py` · W1–2 · 🔓
@@ -285,7 +285,7 @@ These are the only places the two tracks touch.
 - [x] H8.3 Final maps and ROC/TOC figures · 🔒 **A7.3** · *done by Abhinav*
 
 **H9. Fresh-clone test** · W10 · P8.11
-- [ ] **H9.1** Clone to a new folder, create env, download, run pipeline + notebooks; list issues · 🔒 **A7.2b**
+- [x] **H9.1** Clone to a new folder, create env, download, run pipeline + notebooks; list issues · 🔒 **A7.2b**
 - [x] H9.2 Own modules: docstrings, type hints, ruff + black clean · 🔓 · *done by Abhinav (P8.9)*
 
 **Gate tests Harsh writes** (checks Abhinav's side of each phase)
