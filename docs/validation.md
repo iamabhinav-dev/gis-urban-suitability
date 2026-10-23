@@ -152,13 +152,15 @@ keeps the best silhouette (0.606).
 
 | Cell | Cells | Candidates | Grew | Change RF | Dist. to built-up | MCDA |
 |---|---|---|---|---|---|---|
-| 50 m | 232,785 | 84,985 | 6,273 | 0.839 | 0.810 | 0.699 |
+| 50 m | 232,785 | 68,888 | 6,235 | 0.797 | 0.769 | 0.631 |
 | **100 m** | 58,218 | 15,658 | 1,125 | **0.779** | **0.763** | **0.636** |
-| 200 m | 14,567 | 4,322 | 148 | 0.834 | 0.825 | 0.733 |
+| 200 m | 14,567 | 3,307 | 148 | 0.780 | 0.778 | 0.647 |
 
-AUCs are **not comparable across cell sizes**: the growth label itself changes with the cell,
-and at 200 m only 148 cells grew. **What holds everywhere is the ranking: change RF > distance to
-built-up > MCDA.**
+The results barely depend on the cell size: the change RF scores 0.78–0.80 and distance to
+built-up 0.76–0.78 at every size. The labels do change with the cell (a 50 m cell is "built" at
+a finer grain), and at 200 m only 148 cells grew, so differences of a few thousandths are noise.
+**The ranking change RF > distance to built-up > MCDA holds at every size**, though only by
+0.003 at 200 m.
 
 ## 8. Final map
 

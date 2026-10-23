@@ -264,9 +264,10 @@ Three settings were varied (Figure~\ref{fig:sensitivity}):
         point and agreement with ESRI stays at 96.6--98.8\,\%. $k=5$ agrees slightly better
         with ESRI but loses the steep-vegetation cluster, so forest falls from 5.0\,\% to
         3.9\,\% of the area.
-  \item \textbf{Cell size} (50, 100, \SI{200}{\m}; features and labels rebuilt each time): AUCs
-        are not comparable across sizes, because the growth label itself changes with the cell,
-        and at \SI{200}{\m} only 148 cells grew.
+  \item \textbf{Cell size} (50, 100, \SI{200}{\m}; features and labels rebuilt each time): the
+        change RF scores 0.797, 0.779 and 0.780, distance to built-up 0.769, 0.763 and 0.778,
+        and MCDA 0.631, 0.636 and 0.647. The growth label itself changes with the cell, and at
+        \SI{200}{\m} only 148 cells grew, so differences of a few thousandths are noise.
 \end{itemize}
 What holds in every setting is the ranking: \textbf{change RF $>$ distance to built-up $>$
 MCDA}.

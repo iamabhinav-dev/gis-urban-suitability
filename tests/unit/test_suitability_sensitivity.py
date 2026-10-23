@@ -30,6 +30,9 @@ def main_cfg(tmp_path, monkeypatch):
     )
     for name in ("osm", "buildings_2018.gpkg", "buildings_current.gpkg"):
         (out / name).mkdir() if name == "osm" else (out / name).write_text("")
+    raw = cfg.paths["data_raw"] / "osm" / "current"
+    raw.mkdir(parents=True, exist_ok=True)
+    (raw / "protected.gpkg").write_text("")
     path = cfg.root / "config" / "config.yaml"
     monkeypatch.setattr(se, "load_config", lambda p=None: load_config(p or path))
     monkeypatch.setattr(se, "DEFAULT_CONFIG_PATH", path)
@@ -57,3 +60,7 @@ def test_cell_project(main_cfg, cell):
     g = build_grid(sub)
     assert len(g) > 0 and np.allclose(((g["x"] - ref.transform.c) / (cell / 2)) % 2, 1)
     assert sub.paths["data_features"] != cfg.paths["data_features"]  # never the main project's data
+    # regression: the exclusion mask reads OSM lakes / protected areas from the raw downloads
+    from src.download.osm import osm_path
+
+    assert osm_path(sub, "current", "protected").exists()

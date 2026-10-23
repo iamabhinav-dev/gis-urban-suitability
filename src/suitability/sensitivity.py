@@ -8,7 +8,8 @@ Three experiments, each against the project defaults (slope 15°, k = 7, 100 m c
 - **k** (``clustering.k``): final-run clustering and labelling in memory; reported:
   silhouette, Davies-Bouldin, class shares and agreement with ESRI / WorldCover;
 - **cell size** (``grid.cell_size_m``): the whole feature and label chain rebuilt in a
-  separate project under ``outputs/sensitivity/cell_{m}/`` (processed rasters linked, or
+  separate project under ``outputs/sensitivity/cell_{m}/`` (processed rasters and raw OSM
+  layers linked, or
   cropped by 10 px at the bottom edge of the buffer when the grid isn't a multiple of
   the cell); reported as for the slope threshold. The processed buildings keep their
   100 m cell ids, so building counts (leaky, used by no model) are wrong there.
@@ -176,6 +177,11 @@ def cell_project(cell: int) -> Path:
         dst = proc / name
         if not (dst.exists() or dst.is_symlink()):
             dst.symlink_to(src / name)
+    # the exclusion mask reads OSM lakes and protected areas from the raw downloads
+    raw_osm = root / "data" / "raw" / "osm"
+    if not (raw_osm.exists() or raw_osm.is_symlink()):
+        raw_osm.parent.mkdir(parents=True, exist_ok=True)
+        raw_osm.symlink_to(Path(main.paths["data_raw"]) / "osm")
     left, top = ref["transform"][2], ref["transform"][5]
     ref.update(
         cell_size_m=float(cell),

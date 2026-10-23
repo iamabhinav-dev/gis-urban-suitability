@@ -280,8 +280,8 @@ def sensitivity(cfg) -> Path:
     _title(
         fig,
         "Sensitivity of the results",
-        "Ranking holds everywhere; AUC across cell sizes isn't comparable "
-        "(the growth label changes with the cell)",
+        "AUC changes little with the slope threshold or the cell size; "
+        "the ranking holds everywhere",
     )
     return save(fig, cfg, "chart_sensitivity")
 
