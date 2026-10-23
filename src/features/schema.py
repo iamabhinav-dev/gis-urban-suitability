@@ -321,6 +321,7 @@ def read_contract(path: Path, contract_id: str) -> pd.DataFrame:
 
 
 def validate_score_meta(path: Path) -> dict:
+    """Read a C8 metadata JSON; raise if keys are missing or a feature is not a model input."""
     meta = json.loads(Path(path).read_text(encoding="utf-8"))
     missing = [k for k in SCORE_META_KEYS if k not in meta]
     if missing:

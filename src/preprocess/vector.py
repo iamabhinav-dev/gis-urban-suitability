@@ -123,6 +123,7 @@ def classify_roads(highway: pd.Series, keep_tracks: bool) -> pd.Series:
 
 
 def clean_roads(cfg, raw: gpd.GeoDataFrame, extent) -> tuple[gpd.GeoDataFrame, dict]:
+    """Drivable roads with a major / minor class, clipped and single-part."""
     g, stats = clean_geometries(raw, cfg.crs, extent, LINE_TYPES)
     g["road_class"] = classify_roads(g["highway"], bool(cfg["vector"]["keep_tracks"]))
     stats["not_drivable"] = int(g["road_class"].isna().sum())
@@ -140,6 +141,7 @@ def clean_roads(cfg, raw: gpd.GeoDataFrame, extent) -> tuple[gpd.GeoDataFrame, d
 
 
 def clean_water(cfg, raw: gpd.GeoDataFrame, extent) -> tuple[gpd.GeoDataFrame, dict]:
+    """OSM lakes (polygons) and waterways (single-part lines), clipped."""
     raw = raw.copy()
     poly = raw.geom_type.isin(POLY_TYPES)
     natural = raw["natural"] if "natural" in raw.columns else pd.Series(None, index=raw.index)
@@ -165,6 +167,7 @@ def clean_water(cfg, raw: gpd.GeoDataFrame, extent) -> tuple[gpd.GeoDataFrame, d
 
 
 def clean_buildings(cfg, raw: gpd.GeoDataFrame, extent) -> tuple[gpd.GeoDataFrame, dict]:
+    """Building footprints with area and centroid, size-filtered, with their grid cell."""
     g, stats = clean_geometries(raw, cfg.crs, extent, POLY_TYPES)
     # single-part MultiPolygons (osmnx returns every building as one) -> Polygon
     geoms = g.geometry.values
@@ -205,6 +208,7 @@ def clean_buildings(cfg, raw: gpd.GeoDataFrame, extent) -> tuple[gpd.GeoDataFram
 
 
 def clean_protected(cfg, raw: gpd.GeoDataFrame, extent) -> tuple[gpd.GeoDataFrame, dict]:
+    """Protected-area polygons (e.g. Bannerghatta NP), clipped."""
     g, stats = clean_geometries(raw, cfg.crs, extent, POLY_TYPES)
     stats["km2"] = round(float(g.area.sum()) / 1e6, 2)
     return g, stats
@@ -221,7 +225,8 @@ CLEANERS = {
 # ---------------------------------------------------------------- run
 
 
-def reference_extent(cfg):
+def reference_extent(cfg) -> shapely.Polygon:
+    """The reference grid's bounding box (the clipping extent)."""
     return box(*load_reference_grid(cfg).bounds)
 
 
@@ -241,6 +246,7 @@ def write_c6(
 
 
 def preprocess_snapshot(cfg, snapshot: str) -> dict:
+    """Clean every layer of one OSM snapshot and write it (plus C6 for the buildings)."""
     extent = reference_extent(cfg)
     grid_ids = set(build_grid(cfg)["cell_id"].tolist())
     report = {}
@@ -260,6 +266,7 @@ def preprocess_snapshot(cfg, snapshot: str) -> dict:
 
 
 def preprocess_vectors(cfg, only: list[str] | None = None) -> dict:
+    """Clean every OSM snapshot; write the layers and C6."""
     return {snap: preprocess_snapshot(cfg, snap) for snap in (only or list(snapshots(cfg)))}
 
 

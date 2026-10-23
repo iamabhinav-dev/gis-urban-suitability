@@ -98,6 +98,7 @@ def snapshots(cfg) -> dict[str, str | None]:
 
 
 def layers_for(snapshot: str) -> tuple[str, ...]:
+    """OSM layers of a snapshot (protected areas only for ``current``)."""
     return SNAPSHOT_LAYERS["current" if snapshot == "current" else "baseline"]
 
 
@@ -127,7 +128,7 @@ def _use_system_dns() -> None:
 
     from osmnx import _http
 
-    _http._config_dns = lambda url: None
+    _http._config_dns = lambda _url: None
     socket.getaddrinfo = _http._original_getaddrinfo
 
 
@@ -193,7 +194,9 @@ def fetch_features(cfg, bbox, tags: dict, date: str | None) -> tuple[gpd.GeoData
     )
 
 
-def tidy(gdf: gpd.GeoDataFrame, geom_types: tuple[str, ...], columns: tuple[str, ...]):
+def tidy(
+    gdf: gpd.GeoDataFrame, geom_types: tuple[str, ...], columns: tuple[str, ...]
+) -> gpd.GeoDataFrame:
     """Keep the wanted geometry types and tag columns; add ``osm_type``, ``osm_id``."""
     gdf = gdf[gdf.geometry.notna() & gdf.geom_type.isin(geom_types)]
     out = gdf.reset_index()

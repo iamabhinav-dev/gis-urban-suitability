@@ -36,6 +36,7 @@ log = logging.getLogger(__name__)
 
 
 def features_years(cfg) -> list[int]:
+    """Years with a feature table: baseline and latest."""
     y = cfg["years"]
     return sorted({int(y["baseline"]), int(y["latest"])})
 
@@ -63,6 +64,7 @@ def _read(path) -> np.ndarray:
 
 
 def terrain_features(cfg, k: int) -> dict[str, np.ndarray]:
+    """Mean elevation, mean and maximum slope per cell."""
     elev = _read(processed_dir(cfg) / "elevation.tif").astype("float64")
     slope = _read(processed_dir(cfg) / "slope.tif").astype("float64")
     return {

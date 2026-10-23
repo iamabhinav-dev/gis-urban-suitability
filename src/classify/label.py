@@ -93,6 +93,7 @@ def cluster_means(cfg, run: str, assignments: pd.DataFrame) -> pd.DataFrame:
 
 
 def rule_table(cfg, run: str, assignments: pd.DataFrame) -> pd.DataFrame:
+    """Cluster means with the class, rule and flag each cluster gets."""
     means = cluster_means(cfg, run, assignments)
     rules = cfg["labeling"]
     out = [classify_cluster(row, rules) for _, row in means.iterrows()]
@@ -156,6 +157,7 @@ def write_exclusion_mask(cfg, excl: pd.DataFrame, path: Path) -> Path:
 
 
 def write_labels(cfg, runs: list[str] | None = None) -> dict[str, pd.DataFrame]:
+    """Label both runs (or ``runs``); write C7, the rule tables and the exclusion masks."""
     out = {}
     for run in runs or list(cl.RUNS):
         c7, rules, excl = label_run(cfg, run)

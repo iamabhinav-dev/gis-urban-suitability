@@ -109,6 +109,7 @@ def candidate_sites(cfg) -> gpd.GeoDataFrame:
 
 
 def write_candidates(cfg) -> gpd.GeoDataFrame:
+    """Write the candidate sites as GeoPackage and CSV."""
     gdf = candidate_sites(cfg)
     gdf.to_file(gpkg_path(cfg), driver="GPKG")
     gdf.drop(columns="geometry").to_csv(csv_path(cfg), index=False)

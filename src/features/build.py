@@ -60,6 +60,7 @@ def write_feature_gpkg(cfg, df: pd.DataFrame, path) -> None:
 
 
 def write_feature_tables(cfg) -> dict[int, pd.DataFrame]:
+    """Build and write C4 (parquet + GeoPackage) for every feature year."""
     out = {}
     for year in features_years(cfg):
         df = build_feature_table(cfg, year)

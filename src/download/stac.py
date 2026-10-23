@@ -55,7 +55,9 @@ def aoi_bounds_4326(cfg) -> tuple[float, float, float, float]:
     )
 
 
-def search_items(collection: str, bbox, datetime: str | None = None, query: dict | None = None):
+def search_items(
+    collection: str, bbox, datetime: str | None = None, query: dict | None = None
+) -> list:
     """STAC items (signed hrefs) intersecting ``bbox``, sorted by id; retried on failure."""
     import planetary_computer as pc
     import pystac_client

@@ -34,6 +34,7 @@ def worldcover_path(cfg, year: int) -> Path:
 
 
 def esri_years(cfg) -> list[int]:
+    """ESRI LULC years to download (baseline to latest)."""
     y = cfg["years"]
     return list(range(int(y["baseline"]), int(y["latest"]) + 1))
 

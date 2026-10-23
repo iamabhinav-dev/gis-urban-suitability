@@ -49,6 +49,7 @@ FEATURE_LABELS = {
 
 
 def feature_label(col: str) -> str:
+    """Readable name of a profile column."""
     if col in FEATURE_LABELS:
         return FEATURE_LABELS[col]
     if col.startswith("ring"):

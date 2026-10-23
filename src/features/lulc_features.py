@@ -26,10 +26,12 @@ def block_view(arr: np.ndarray, k: int) -> np.ndarray:
 
 
 def block_mean(arr: np.ndarray, k: int) -> np.ndarray:
+    """Mean of each k x k block (one value per cell)."""
     return block_view(arr, k).mean(axis=(1, 3))
 
 
 def block_max(arr: np.ndarray, k: int) -> np.ndarray:
+    """Maximum of each k x k block (one value per cell)."""
     return block_view(arr, k).max(axis=(1, 3))
 
 

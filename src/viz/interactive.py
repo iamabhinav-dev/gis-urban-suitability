@@ -91,6 +91,7 @@ def categorical_png(arr: np.ndarray, colors: dict[int, str], alpha: float = 0.85
 
 
 def sequential_png(arr: np.ndarray, alpha: float = 0.85) -> str:
+    """Data-URI PNG of a 0-1 score raster (NaN transparent)."""
     finite = np.isfinite(arr)
     rgba = np.zeros((*arr.shape, 4))
     rgba[finite] = style.SEQUENTIAL(np.clip(arr[finite], 0, 1))
@@ -111,6 +112,7 @@ def _overlay(m, url: str, bounds, name: str, show: bool) -> None:
 
 
 def legend_html(title: str, items: dict[str, str]) -> str:
+    """HTML legend block: a title and colour swatches."""
     rows = "".join(
         '<div><span style="display:inline-block;width:12px;height:12px;'
         f'background:{c};margin-right:6px"></span>{n}</div>'
@@ -120,6 +122,7 @@ def legend_html(title: str, items: dict[str, str]) -> str:
 
 
 def build_map(cfg) -> folium.Map:
+    """The folium map with every layer."""
     aoi = cfg.aoi.to_crs(4326)
     x0, y0, x1, y1 = aoi.total_bounds
     m = folium.Map(
@@ -172,7 +175,7 @@ def build_map(cfg) -> folium.Map:
     folium.GeoJson(
         cand[[*fields, "geometry"]],
         name="Candidate sites (all S1 patches)",
-        style_function=lambda f: {"color": style.INK, "weight": 0.6, "fillOpacity": 0.0},
+        style_function=lambda _f: {"color": style.INK, "weight": 0.6, "fillOpacity": 0.0},
         popup=folium.GeoJsonPopup(fields=fields),
         show=False,
     ).add_to(m)
@@ -182,7 +185,7 @@ def build_map(cfg) -> folium.Map:
     grp = folium.FeatureGroup(name=f"Top {len(top)} sites", show=True)
     folium.GeoJson(
         top[[*tfields, "geometry"]],
-        style_function=lambda f: {
+        style_function=lambda _f: {
             "color": style.CLASS_COLORS[1],
             "weight": 2.5,
             "fillOpacity": 0.15,
@@ -220,7 +223,7 @@ def build_map(cfg) -> folium.Map:
     folium.GeoJson(
         aoi,
         name="Study area",
-        style_function=lambda f: {"color": style.INK, "weight": 2, "fill": False},
+        style_function=lambda _f: {"color": style.INK, "weight": 2, "fill": False},
     ).add_to(m)
     legend = (
         legend_html("Suitability", {SUIT_NAMES[k]: c for k, c in SUIT_COLORS.items()})
@@ -243,6 +246,7 @@ def build_map(cfg) -> folium.Map:
 
 
 def write_map(cfg) -> Path:
+    """Build and save ``outputs/map.html``."""
     p = map_path(cfg)
     p.parent.mkdir(parents=True, exist_ok=True)
     build_map(cfg).save(str(p))

@@ -57,16 +57,19 @@ BUILT = ESRI_CODE["built"]
 
 
 def read_lulc(cfg, year: int) -> np.ndarray:
+    """Processed ESRI LULC of ``year`` on the reference grid."""
     with rasterio.open(processed_dir(cfg) / f"lulc_esri_{year}.tif") as ds:
         return ds.read(1)
 
 
 def read_slope(cfg) -> np.ndarray:
+    """Processed slope (degrees) on the reference grid."""
     with rasterio.open(processed_dir(cfg) / "slope.tif") as ds:
         return ds.read(1).astype("float64")
 
 
 def run_years(cfg, run: str) -> tuple[int, int]:
+    """The two LULC years that define a run's mask (validation: baseline years; final: latest)."""
     y = cfg["years"]
     if run == "validation":
         return int(y["baseline"]), int(y["baseline_confirm"])
@@ -76,6 +79,7 @@ def run_years(cfg, run: str) -> tuple[int, int]:
 
 
 def run_snapshot(cfg, run: str) -> str:
+    """OSM snapshot whose water feeds a run's mask (time-travel rule)."""
     return schema.vector_snapshot_for(
         cfg, cfg["years"]["baseline"] if run == "validation" else cfg["years"]["latest"]
     )
@@ -266,6 +270,7 @@ def build_labels_and_mask(cfg) -> tuple[pd.DataFrame, pd.DataFrame]:
 
 
 def log_label_counts(df: pd.DataFrame, excl: pd.DataFrame | None = None) -> dict[str, int]:
+    """Log and return how many cells carry each label."""
     counts = {
         "cells": len(df),
         "excluded": int(df["excluded"].sum()),
@@ -290,6 +295,7 @@ def log_label_counts(df: pd.DataFrame, excl: pd.DataFrame | None = None) -> dict
 
 
 def write_labels(cfg) -> pd.DataFrame:
+    """Build C5 and both runs' exclusion tables; write them."""
     df, val_excl = build_labels_and_mask(cfg)
     counts = log_label_counts(df, val_excl)
     path = schema.contract_path(cfg, "C5")

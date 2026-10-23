@@ -119,6 +119,7 @@ def _outline(cfg, ax) -> None:
 
 
 def lattice_extent(cfg) -> tuple[float, float, float, float]:
+    """Map extent (left, right, bottom, top) of the cell lattice."""
     lat = lattice(cfg)
     return (
         lat.left,
@@ -129,6 +130,7 @@ def lattice_extent(cfg) -> tuple[float, float, float, float]:
 
 
 def cell_image(cfg, cell_ids, values) -> np.ndarray:
+    """Values of ``cell_ids`` on the cell lattice (NaN elsewhere)."""
     lat = lattice(cfg)
     grid = schema.read_contract(schema.contract_path(cfg, "C1"), "C1").set_index("cell_id")
     g = grid.loc[np.asarray(cell_ids)]

@@ -64,6 +64,7 @@ class Lattice:
 
 
 def lattice(cfg) -> Lattice:
+    """The 100 m cell lattice of the project's reference grid."""
     return Lattice(load_reference_grid(cfg), float(cfg.cell_size_m))
 
 
@@ -115,6 +116,7 @@ def xy_to_cell_id(cfg, x, y, lat: Lattice | None = None) -> np.ndarray:
 
 
 def write_grid(cfg) -> pd.DataFrame:
+    """Build the analysis grid and write C1 (parquet + GeoPackage)."""
     grid = build_grid(cfg)
     path = schema.contract_path(cfg, "C1")
     path.parent.mkdir(parents=True, exist_ok=True)

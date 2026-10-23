@@ -98,6 +98,7 @@ def toc_curve(y: np.ndarray, s: np.ndarray, points: int = TOC_POINTS) -> dict[st
 
 
 def evaluate_score(y: np.ndarray, s: np.ndarray, lei: np.ndarray) -> dict:
+    """Every metric of one score (AUC, top-N, growth-type AUC)."""
     out = {"auc": float(roc_auc_score(y, s)), "n_scored": int(len(s))}
     for frac in TOP_FRACTIONS:
         pct = int(round(frac * 100))
@@ -111,6 +112,7 @@ def evaluate_score(y: np.ndarray, s: np.ndarray, lei: np.ndarray) -> dict:
 
 
 def s1s2_metrics(cfg, ev: pd.DataFrame) -> dict:
+    """Share of the growth in classes S1 + S2, with precision and lift."""
     cls = (
         pd.read_parquet(classes_path(cfg, "validation")).set_index("cell_id").loc[ev.index, "class"]
     )
@@ -167,6 +169,7 @@ def validation_path(cfg) -> Path:
 
 
 def validate(cfg, do_ablation: bool = True) -> dict:
+    """Run the harness on every score; write ``validation.json``."""
     ev = eval_set(cfg)
     y, lei = ev["grew"].to_numpy(), ev["lei_type"].to_numpy()
     scores = model_scores(cfg, ev.index)

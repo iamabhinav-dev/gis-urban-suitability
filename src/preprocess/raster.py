@@ -191,6 +191,7 @@ def align_to_grid(
 
 
 def write(path: Path, arr: np.ndarray, ref: ReferenceGrid, nodata: float) -> Path:
+    """Write an array as a GeoTIFF on the reference grid."""
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".tmp.tif")
     with rasterio.open(tmp, "w", **ref.profile(str(arr.dtype), nodata)) as dst:
@@ -225,6 +226,7 @@ def dem_on_native_utm(dem_file: Path, ref: ReferenceGrid) -> tuple[np.ndarray, A
 def resample_array(
     arr: np.ndarray, transform: Affine, ref: ReferenceGrid, resampling: Resampling
 ) -> np.ndarray:
+    """Resample an array onto the reference grid (warp)."""
     out = np.full(ref.shape, np.nan, dtype="float32")
     reproject(
         arr.astype("float32"),
