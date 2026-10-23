@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Find Places Like A · Bengaluru South</title>
+<meta name="description" content="Pick a building in Bengaluru South and find the usable land whose surroundings are most like it.">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="css/site.css">
+</head>
+<body class="app-page">
+<nav class="nav" aria-label="Site">
+  <div class="nav-inner">
+    <a class="brand" href="./">Urban Land Suitability <span>· Bengaluru South</span></a>
+    <a class="link" href="find.html" aria-current="page">Find places like A</a>
+    <a class="link" href="map.html">Map</a>
+    <a class="link" href="./#results">Results</a>
+    <a class="link" href="./#downloads">Report &amp; slides</a>
+  </div>
+</nav>
+
+<div class="app">
+  <div id="map" class="app-map" role="application" aria-label="Map of the study area. Click a place to use it as building A."></div>
+
+  <aside class="panel" aria-live="polite">
+    <header class="panel-head">
+      <h1 class="panel-title">Find places like A</h1>
+      <p class="muted small">If you want to build something like the building at <b>A</b>, where in the
+        study area's usable land are the surroundings most alike?</p>
+    </header>
+
+    <div class="step">
+      <div class="step-label">1 · Choose A</div>
+      <p class="small muted" style="margin:0 0 8px">Click anywhere on the map, or start from an example:</p>
+      <div id="examples" class="chips"></div>
+    </div>
+
+    <div class="step">
+      <div class="step-label">2 · Options</div>
+      <div class="controls">
+        <label>Results
+          <select id="opt-n">
+            <option value="10">10</option>
+            <option value="20" selected>20</option>
+            <option value="50">50</option>
+          </select>
+        </label>
+        <label>Search
+          <select id="opt-r">
+            <option value="0" selected>whole study area</option>
+            <option value="10">within 10 km of A</option>
+            <option value="5">within 5 km of A</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <div id="status" class="status small">Loading data (2.5 MB)…</div>
+
+    <div id="a-card" class="a-card" hidden></div>
+
+    <div id="results-wrap" hidden>
+      <div class="step-label" style="display:flex; justify-content:space-between; align-items:baseline">
+        <span>3 · Most similar usable land</span>
+        <button id="fit" class="linkish small" type="button">Show all on map</button>
+      </div>
+      <ol id="results" class="results"></ol>
+    </div>
+
+    <div id="compare" class="compare" hidden></div>
+
+    <details class="about small">
+      <summary>How the matching works</summary>
+      <p>Every 100&nbsp;m cell is described by 20 numbers about its <b>surroundings</b>, never the
+        cell itself: shares of tree, crop, rangeland, bare, water and built-up land within 250 and
+        500&nbsp;m; distances to built-up land, major roads, any road and water; road density;
+        elevation and slope. Each number is standardised, and two cells are compared by the
+        straight-line (Euclidean) distance between their 20 numbers.</p>
+      <p><b>Similarity</b> rescales that distance: 100&nbsp;% means identical surroundings,
+        0&nbsp;% means as different as the 1&nbsp;% least similar usable cells.</p>
+      <p>Only <span class="sw" style="background:var(--usable)"></span>usable land is searched (not
+        built-up, forest, water or protected land). The S1&ndash;S3 badge is the cell's class on the
+        suitability map. Data: land cover 2023, OpenStreetMap 2026-10-01. The same calculation as
+        <code>src/similarity/query.py</code>, run in your browser.</p>
+    </details>
+  </aside>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
+<script src="js/similar-core.js"></script>
+<script src="js/find.js"></script>
+</body>
+</html>

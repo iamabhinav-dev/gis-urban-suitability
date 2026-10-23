@@ -14,8 +14,12 @@ The pipeline:
    with land that became built in 2022 and 2023, next to a classic MCDA/AHP overlay and simple
    baselines.
 
-**Live site:** <https://iamabhinav-dev.github.io/gis-urban-suitability/> (interactive map,
-report and slides; published from the `gh-pages` branch).
+**Live site:** <https://iamabhinav-dev.github.io/gis-urban-suitability/>: results, the
+interactive map, report and slides, and a **"find places like A"** tool
+([find.html](https://iamabhinav-dev.github.io/gis-urban-suitability/find.html)): click a
+building and it lists the usable land with the most similar surroundings, running the
+single-building query in the browser. Build it with `python scripts/build_site.py` (preview with
+`python -m http.server -d outputs/site`); it is published from the `gh-pages` branch.
 
 ## Results in brief
 

@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Urban Land Suitability · Bengaluru South</title>
+<meta name="description" content="Where can new urban development go in Bengaluru South? A land suitability analysis in Python from open land-cover, terrain and OpenStreetMap data, tested against real growth.">
+<link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+<nav class="nav" aria-label="Site">
+  <div class="nav-inner">
+    <a class="brand" href="./">Urban Land Suitability <span>· Bengaluru South</span></a>
+    <a class="link" href="find.html">Find places like A</a>
+    <a class="link" href="map.html">Map</a>
+    <a class="link" href="#results">Results</a>
+    <a class="link" href="#method">Method</a>
+    <a class="link" href="#downloads">Report &amp; slides</a>
+  </div>
+</nav>
+
+<main>
+  <section>
+    <div class="wrap">
+      <h1>Where can new urban development go in Bengaluru South?</h1>
+      <p class="lead">A land suitability analysis built in Python from open land-cover, terrain and
+        OpenStreetMap data. Every method was tested by computing it with data from 2018 only and
+        checking it against the land that was actually built on by 2022 and 2023.</p>
+      <div class="actions">
+        <a class="btn primary" href="find.html">Find places like a building &rarr;</a>
+        <a class="btn" href="map.html">Explore the suitability map</a>
+      </div>
+      <div class="stats" role="list">
+        <div class="stat" role="listitem"><div class="value">0.797</div><div class="label">AUC: how well the combined score ranks land that was built on next (0.5 = chance)</div></div>
+        <div class="stat" role="listitem"><div class="value">3.45&times;</div><div class="label">as much growth in the top 10&nbsp;% of scored land as in a random 10&nbsp;%</div></div>
+        <div class="stat" role="listitem"><div class="value">65&nbsp;%</div><div class="label">of the growth fell in the two best suitability classes</div></div>
+        <div class="stat" role="listitem"><div class="value">582&nbsp;km²</div><div class="label">study area, 58,218 cells of 100&nbsp;m, Hosur Road to Bannerghatta</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>What you can do here</h2>
+      <div class="cards">
+        <div class="card">
+          <h3><a href="find.html">Find places like A</a></h3>
+          <p>Pick any building or plot on the map. The tool finds the usable land whose
+            surroundings (land cover nearby, roads, water, built-up density, terrain) are most
+            like it, and explains each match.</p>
+        </div>
+        <div class="card">
+          <h3><a href="map.html">Explore the map</a></h3>
+          <p>Suitability classes, the three-class land map, model scores and the top 20
+            candidate sites, each with its area, slope and distances.</p>
+        </div>
+        <div class="card">
+          <h3><a href="#downloads">Read the report</a></h3>
+          <p>Data, methods, validation and limitations in full: a 20-page report and the
+            presentation slides.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="results">
+    <div class="wrap">
+      <h2>How well does it predict growth?</h2>
+      <p class="lead">Every score below was computed with 2018 data and tested on 12,777 non-built
+        cells, of which 1,125 were built on by 2022/23.</p>
+      <div class="grid-2">
+        <div class="table-wrap">
+          <table>
+            <caption class="small muted" style="caption-side:bottom; text-align:left; padding-top:8px">
+              Lift: growth in the top 10&nbsp;% of scores relative to a random 10&nbsp;%. Grey rows are baselines.</caption>
+            <thead><tr><th scope="col">Score</th><th class="n" scope="col">AUC</th><th class="n" scope="col">Lift</th></tr></thead>
+            <tbody>
+              <tr class="best"><td>Combined suitability score</td><td class="n">0.797</td><td class="n">3.45</td></tr>
+              <tr><td>Random forest on recent change</td><td class="n">0.779</td><td class="n">3.23</td></tr>
+              <tr><td>Building similarity</td><td class="n">0.773</td><td class="n">2.99</td></tr>
+              <tr class="baseline"><td>Distance to built-up land</td><td class="n">0.763</td><td class="n">3.04</td></tr>
+              <tr><td>Classic expert overlay (MCDA / AHP)</td><td class="n">0.636</td><td class="n">1.86</td></tr>
+              <tr class="baseline"><td>Random</td><td class="n">0.50</td><td class="n">1.00</td></tr>
+            </tbody>
+          </table>
+          <p class="small muted">Growth next to existing built-up land is predicted well (AUC 0.82);
+            growth far from it is not (0.51). The expert overlay does worse than one of its own
+            criteria: its weights dilute the one strong signal.</p>
+        </div>
+        <figure>
+          <img src="img/map_suitability_classes.png" alt="Map of suitability classes S1 to S3 on usable land in Bengaluru South, concentrated on the southern and eastern edge of the built-up area">
+          <figcaption><span class="sw" style="background:var(--s1)"></span>S1 top 10&nbsp;%
+            <span class="sw" style="background:var(--s2); margin-left:10px"></span>S2
+            <span class="sw" style="background:var(--s3); margin-left:10px"></span>S3,
+            on usable land in 2023, with candidate sites outlined.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section id="method">
+    <div class="wrap">
+      <h2>How it works</h2>
+      <div class="cards">
+        <div class="card"><div class="num">1</div><h3>Classify the land</h3>
+          <p>K-Means clustering of 100&nbsp;m cells on land-cover shares and terrain gives
+            <span class="sw" style="background:var(--built)"></span>built-up,
+            <span class="sw" style="background:var(--forest)"></span>forest and
+            <span class="sw" style="background:var(--usable)"></span>usable land
+            (96.6&nbsp;% agreement with the source map).</p></div>
+        <div class="card"><div class="num">2</div><h3>Describe surroundings</h3>
+          <p>Every cell gets a 20-number profile of its surroundings: land cover within 250 and
+            500&nbsp;m, distances to built-up land, roads and water, road density and terrain.
+            Never the cell's own land cover.</p></div>
+        <div class="card"><div class="num">3</div><h3>Learn from where building happened</h3>
+          <p>Similarity to existing buildings and a random forest trained on growth between 2018
+            and 2021 are combined into one score, graded S1&ndash;S3.</p></div>
+        <div class="card"><div class="num">4</div><h3>Test against real growth</h3>
+          <p>Scores use 2018 data only and are checked on land built by 2022/23, with out-of-fold
+            scoring and simple baselines, so the numbers are honest.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="downloads">
+    <div class="wrap">
+      <h2>Report, slides and code</h2>
+      <div class="actions" style="margin-top:12px">
+        <a class="btn" href="report.pdf">Report (PDF, 20 pages)</a>
+        <a class="btn" href="slides.pdf">Slides (PDF)</a>
+        <a class="btn" href="https://github.com/iamabhinav-dev/gis-urban-suitability">Code on GitHub</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    CS60111 Geographical Information Systems, term project.
+    Data: Impact Observatory, Microsoft and Esri 10&nbsp;m Annual Land Use Land Cover (CC BY 4.0);
+    ESA WorldCover 2021 (CC BY 4.0); Copernicus DEM GLO-30; &copy; OpenStreetMap contributors (ODbL).
+    Basemap tiles &copy; Esri.
+  </div>
+</footer>
+</body>
+</html>
