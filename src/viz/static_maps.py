@@ -273,6 +273,7 @@ SCORE_TITLES = {
     "mcda": "MCDA / AHP baseline",
     "mcda_no_lulc": "MCDA without land cover",
     "similarity_knn": "Building similarity (kNN)",
+    "suitability": "Combined suitability score",
 }
 
 

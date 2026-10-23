@@ -12,7 +12,7 @@ PNG, 300 dpi, ``outputs/figures/chart_*.png``:
 - ``chart_sensitivity``: AUC by slope threshold and by cell size;
 - ``chart_holdout``: held-out building check, AUC per scorer.
 
-TOC curves, the ablation table and the LEI split come from the validation harness (P7.4).
+- ``chart_toc``, ``chart_growth_type``, ``chart_ablation``: from ``validation.json`` (P7.4).
 
 Run: python -m src.viz.charts
 """
@@ -42,10 +42,12 @@ log = logging.getLogger(__name__)
 
 # fixed series identity across every chart (colour follows the model, never its rank)
 MODEL_STYLE = {
+    "suitability": ("Combined score", style.SERIES[5]),
     "rf_change": ("Change RF", style.SERIES[0]),
+    "similarity_knn": ("Building similarity", style.SERIES[4]),
     "dist_to_built": ("Distance to built-up", style.SERIES[1]),
-    "mcda": ("MCDA / AHP", style.SERIES[2]),
     "rf_state": ("State RF", style.SERIES[3]),
+    "mcda": ("MCDA / AHP", style.SERIES[2]),
 }
 
 
@@ -233,17 +235,14 @@ def roc(cfg) -> Path:
         schema.contract_path(cfg, "C4", year=cfg["years"]["baseline"]), "C4"
     ).set_index("cell_id")
     scores = {"dist_to_built": -c4.loc[cand, "log_dist_built"].to_numpy()}
-    for m in ("rf_change", "mcda", "rf_state"):
-        scores[m] = (
-            pd.read_parquet(scores_path(cfg, m, "validation"))
-            .set_index("cell_id")
-            .loc[cand, "score"]
-            .to_numpy()
-        )
+    for m in MODEL_STYLE:
+        p = scores_path(cfg, m, "validation")
+        if m != "dist_to_built" and p.exists():
+            scores[m] = pd.read_parquet(p).set_index("cell_id").loc[cand, "score"].to_numpy()
     fig, ax = plt.subplots(figsize=(5.2, 5))
     ax.plot([0, 1], [0, 1], color=style.INK_MUTED, lw=1, ls="--")
     ax.text(0.62, 0.55, "random", color=style.INK_MUTED, fontsize=8, rotation=40)
-    for m in MODEL_STYLE:
+    for m in (m for m in MODEL_STYLE if m in scores):
         fpr, tpr, _ = roc_curve(y, scores[m])
         name, color = MODEL_STYLE[m]
         ax.plot(fpr, tpr, color=color, label=f"{name} (AUC {roc_auc_score(y, scores[m]):.3f})")
@@ -312,12 +311,130 @@ def holdout(cfg) -> Path:
     return save(fig, cfg, "chart_holdout")
 
 
+def _validation(cfg) -> dict:
+    return _metrics(cfg, "validation.json")
+
+
+def toc(cfg) -> Path:
+    v = _validation(cfg)
+    ev = v["eval_set"]
+    fig, ax = plt.subplots(figsize=(5.4, 5))
+    ax.plot([0, 1], [0, 1], color=style.INK_MUTED, lw=1, ls="--")
+    ax.text(0.55, 0.47, "random", color=style.INK_MUTED, fontsize=8, rotation=40)
+    p = ev["prevalence"]
+    ax.plot([0, p, 1], [0, 1, 1], color=style.INK_MUTED, lw=1, ls=":")
+    ax.text(p + 0.01, 0.9, "perfect", color=style.INK_MUTED, fontsize=8)
+    for m, (name, color) in MODEL_STYLE.items():
+        if m in v["toc"]:
+            t = v["toc"][m]
+            ax.plot(t["flagged"], t["hits"], color=color, label=f"{name}")
+    ax.set_xlabel("share of candidate cells flagged")
+    ax.set_ylabel("share of growth found")
+    ax.set_aspect("equal")
+    ax.legend(loc="lower right", fontsize=8)
+    _title(
+        fig,
+        "Total operating characteristic",
+        f"{ev['n_cells']:,} candidate cells, {ev['n_grew']:,} grew by 2022/23",
+    )
+    return save(fig, cfg, "chart_toc")
+
+
+def growth_type(cfg) -> Path:
+    v = _validation(cfg)["models"]
+    names = [m for m in MODEL_STYLE if m in v] + ["random"]
+    fig, ax = plt.subplots(figsize=(7.5, 3.6))
+    y = np.arange(len(names))
+    h = 0.36
+    for i, (key, label, color) in enumerate(
+        (
+            ("auc_adjacent", "next to existing built-up (adjacent)", style.SERIES[0]),
+            ("auc_outlying", "away from it (outlying)", style.SERIES[1]),
+        )
+    ):
+        vals = [v[m][key] for m in names]
+        bars = ax.barh(
+            y + (i - 0.5) * (h + 0.04),
+            vals,
+            height=h,
+            color=color,
+            label=label,
+            edgecolor=style.SURFACE,
+        )
+        ax.bar_label(bars, fmt="%.2f", padding=3, fontsize=7.5, color=style.INK_2)
+    ax.set_yticks(y, [MODEL_STYLE[m][0] if m in MODEL_STYLE else "Random" for m in names])
+    ax.invert_yaxis()
+    ax.axvline(0.5, color=style.INK_MUTED, lw=1, ls="--")
+    ax.set_xlim(0.3, 0.9)
+    ax.set_xlabel("AUC on growth of that type (0.5 = chance)")
+    ax.grid(axis="y", visible=False)
+    ax.legend(loc="lower right", fontsize=8)
+    ev = _validation(cfg)["eval_set"]
+    _title(
+        fig,
+        "Growth type matters",
+        f"{ev['n_adjacent']:,} adjacent and {ev['n_outlying']:,} outlying grown cells"
+        " (landscape expansion index)",
+    )
+    return save(fig, cfg, "chart_growth_type")
+
+
+def ablation_chart(cfg) -> Path | None:
+    a = _validation(cfg).get("ablation")
+    if not a:
+        return None
+    groups = list(a["drop"])
+    labels = {
+        "lulc_context": "land cover nearby",
+        "near_built": "built-up nearby",
+        "roads": "roads",
+        "terrain": "terrain",
+        "water": "water",
+    }
+    fig, ax = plt.subplots(figsize=(7, 3.4))
+    y = np.arange(len(groups))
+    h = 0.36
+    for i, m in enumerate(("rf_change", "similarity_knn")):
+        vals = [a["drop"][g][m]["delta"] for g in groups]
+        name, color = MODEL_STYLE[m]
+        bars = ax.barh(
+            y + (i - 0.5) * (h + 0.04),
+            vals,
+            height=h,
+            color=color,
+            label=name,
+            edgecolor=style.SURFACE,
+        )
+        ax.bar_label(bars, fmt="%+.3f", padding=3, fontsize=7.5, color=style.INK_2)
+    ax.set_yticks(y, [labels.get(g, g) for g in groups])
+    ax.invert_yaxis()
+    ax.axvline(0, color=style.INK_MUTED, lw=1)
+    lo = min(
+        0.0, *(a["drop"][g][m]["delta"] for g in groups for m in ("rf_change", "similarity_knn"))
+    )
+    hi = max(
+        0.0, *(a["drop"][g][m]["delta"] for g in groups for m in ("rf_change", "similarity_knn"))
+    )
+    pad = 0.35 * (hi - lo)
+    ax.set_xlim(lo - pad, hi + pad)  # room for the value labels
+    ax.set_xlabel("change in AUC when the group is dropped")
+    ax.grid(axis="y", visible=False)
+    ax.legend(loc="lower left", fontsize=8)
+    _title(
+        fig,
+        "Which surroundings carry the signal",
+        f"Full AUC: change RF {a['full']['rf_change']:.3f}, "
+        f"similarity {a['full']['similarity_knn']:.3f}",
+    )
+    return save(fig, cfg, "chart_ablation")
+
+
 def make_all(cfg) -> list[Path]:
     style.apply()
-    return [
-        f(cfg)
-        for f in (k_scan, cluster_profiles, class_areas, rf_importance, roc, sensitivity, holdout)
-    ]
+    figs = [k_scan, cluster_profiles, class_areas, rf_importance, roc, sensitivity, holdout]
+    if (Path(cfg.paths["metrics"]) / "validation.json").exists():
+        figs += [toc, growth_type, ablation_chart]
+    return [p for p in (f(cfg) for f in figs) if p is not None]
 
 
 def main() -> None:

@@ -1,47 +1,92 @@
 # Validation
 
 How well does each score predict where Bengaluru South actually grew? This document records the
-metrics, figures and misses (PRD §9.8, deliverable D13). Numbers come from `outputs/metrics/*.json`;
-figures are in `outputs/figures/`.
+metrics, figures and misses (PRD §9.8, deliverable D13). Numbers come from
+`outputs/metrics/*.json` (mainly `validation.json`, written by `src/suitability/validate.py`);
+figures are in `outputs/figures/`. Every number below is recomputed independently by
+`scripts/verify_suitability.py`, `verify_similarity.py`, `verify_similarity_models.py`,
+`verify_mcda.py` and `verify_sensitivity.py`.
 
-**Status:** Abhinav's parts are complete: the MCDA comparison, the sensitivity analysis, the
-held-out building check, and a preview of the learned models. Harsh's harness sections (temporal
-validation of the combined score, lift, TOC, LEI split, ablation, suitability hit rates; P7.4) are
-marked *to be added*.
+## 1. Design
 
-## 1. Design in one paragraph
+Every score is computed **as of 2018** (the validation run):
+- 2018 land cover;
+- the 2018-01-01 OSM snapshot;
+- a 3-class map and exclusion mask built from data up to 2019 (time-travel rule, D12);
+- 2018 reference buildings.
 
-Every score is computed **as of 2018** (the validation run): 2018 land cover, the 2018-01-01 OSM
-snapshot, and a 3-class map and exclusion mask built from data up to 2019 (time-travel rule, D12).
 It is then compared with **persistent growth**: candidate cells (non-built in 2018 and 2019, not
 excluded) that are built in **both 2022 and 2023** (`grew`, C5). Cells that are neither clearly
-grown nor clearly non-built in 2022/23 (`ambiguous`) are left out. That leaves **12,777 candidate
-cells, of which 1,125 grew (8.8 %)**. Models trained on growth labels (the change RF) are scored
-**out of fold** with 2 km spatial blocks (D11). Distance to built-up and random are always shown
-as baselines (D7).
+grown nor clearly non-built in 2022/23 (`ambiguous`) are left out. That leaves **12,777
+candidate cells, of which 1,125 grew (8.8 %)**: 1,034 next to existing built-up land
+(`adjacent`) and 91 away from it (`outlying`), by the landscape expansion index.
 
-## 2. Headline: AUC on persistent growth
+**Leakage guards:**
+- No model sees a cell's own land cover or building count (D4, `schema.check_model_inputs`).
+- Models trained on growth labels are scored **out of fold** with 2 km spatial blocks (D11).
+- The combined score's weight is chosen on the 2020/21 training label, never on `grew`.
+- Distance to built-up and random are always shown as baselines (D7).
 
-| Score | AUC on `grew` | Notes |
+**Time-travel exceptions** (static layers, FR-8.2): the Copernicus DEM (2011–2015 acquisition,
+terrain treated as static) and the OSM protected-area boundary (Bannerghatta National Park,
+current snapshot; a park boundary, not something that grows). Both are used in both runs.
+
+## 2. Headline results
+
+| Score | AUC | Precision, top 10 % | Lift, top 10 % | Lift, top 30 % | AUC adjacent | AUC outlying |
+|---|---|---|---|---|---|---|
+| **Combined suitability** | **0.797** | **30.4 %** | **3.45** | **2.40** | 0.822 | 0.512 |
+| Change RF (out of fold) | 0.779 | 28.5 % | 3.23 | 2.27 | 0.803 | 0.512 |
+| Building similarity (kNN) | 0.773 | 26.4 % | 2.99 | 2.22 | 0.796 | 0.511 |
+| *Distance to built-up* | 0.763 | 26.8 % | 3.04 | 2.15 | 0.792 | 0.439 |
+| State RF (out of fold) | 0.702 | 29.0 % | 3.29 | 1.92 | 0.722 | 0.484 |
+| MCDA / AHP | 0.636 | 16.4 % | 1.86 | 1.64 | 0.655 | 0.420 |
+| MCDA without land cover | 0.614 | 15.3 % | 1.73 | 1.46 | 0.630 | 0.430 |
+| *Random* | 0.499 | 8.8 % | 1.00 | 1.02 | 0.501 | 0.477 |
+
+*Italics: baselines.* Figures: `chart_roc.png`, `chart_toc.png`, `chart_growth_type.png`.
+
+**Against the PRD targets (§9.8):**
+- Best model ≥ distance to built-up: **met** (0.797 vs 0.763).
+- Lift ≥ 2 in the top 10 %: **met** (3.45).
+- **S1 + S2 hit rate:** the S1 and S2 classes of the validation run hold 25 % of the evaluated
+  cells and **65.2 % of the growth** (precision 22.9 %, lift 2.60). They are 30 % of all
+  candidates: the 2,881 ambiguous cells left out of the evaluation (partly built by 2022/23)
+  fall in S1 + S2 twice as often (52 %), so the scores also rank partial growth high.
+
+**Combining helps.** The combined score (0.3 × similarity + 0.7 × change RF, within-run
+percentiles) beats both of its parts. They rank cells differently enough to complement each
+other: the similarity never sees a growth label, while the RF learns from 2020/21 change.
+
+**Out-of-fold scoring matters.** Scored on its own training cells, the change RF would claim
+AUC 0.997 against its honest 0.779. Its 2020/21 training positives are mostly also 2022/23
+growth cells (`scripts/verify_similarity_models.py`, check 3).
+
+## 3. Growth type: where every model fails
+
+All scores find growth next to existing built-up land well (AUC ~0.80–0.82). For **outlying**
+growth they are at chance (~0.51), and distance to built-up and MCDA are *below* chance (0.44,
+0.42), because outlying growth is by definition far from built-up land. This matches Wang et
+al. (2021): diffusional growth is much harder to predict than aggregated growth. Outlying growth
+is only 8 % of the grown cells (91 of 1,125) here, so it hardly moves the overall AUC.
+
+## 4. Ablation: which surroundings carry the signal
+
+Each feature group dropped in turn (FR-8.5; `chart_ablation.png`):
+
+| Dropped group | Change RF ΔAUC | Similarity ΔAUC |
 |---|---|---|
-| Change RF (out of fold) | **0.779** | trained on 2018 → 2020/21 change, tuned on that label only |
-| Distance to built-up | 0.763 | the bar to beat (prototype: 0.75) |
-| State RF (out of fold) | 0.702 | built vs non-built in 2018; comparison only |
-| MCDA / AHP | 0.636 | fixed expert weights, CR 0.003 |
-| MCDA without land cover | 0.614 | |
-| Random | 0.500 | |
-| Aggregate similarity (kNN) | *to be added (P6.4 / P7.4)* | |
-| Combined suitability score | *to be added (P7.1 / P7.4)* | |
+| Built-up nearby (250 / 500 m rings, distance to built-up) | **−0.034** | **−0.057** |
+| Land cover nearby (tree, crop, rangeland, bare, water rings) | −0.016 | +0.007 |
+| Terrain (elevation, slope) | −0.012 | −0.001 |
+| Roads (distances, density) | +0.002 | −0.003 |
+| Water (distance to water) | +0.005 | −0.002 |
 
-Figure: `chart_roc.png`. The change RF meets the PRD target (best model ≥ distance to built-up),
-but only just: +0.016 AUC. Most of the predictable signal is "growth happens next to existing
-built-up land", which a single distance already captures.
+Built-up land nearby is by far the most important group for both. Roads and water add nothing
+once the built-up context is known: road access is already implied by nearby built-up land.
+Nearby land cover helps the RF but not the similarity.
 
-**Why out-of-fold scoring matters:** scored on its own training cells, the change RF would claim
-AUC 0.997 against its honest 0.779. Its 2020/21 training positives are mostly also 2022/23 growth
-cells, so in-sample scores would leak the answer (`scripts/verify_similarity_models.py`, check 3).
-
-## 3. MCDA / AHP baseline (P7.3, P7.5)
+## 5. MCDA / AHP baseline (P7.3, P7.5)
 
 Five criteria, each rescaled to 0–1 (`src/suitability/mcda.py`, `config.yaml → mcda`):
 
@@ -56,26 +101,22 @@ Five criteria, each rescaled to 0–1 (`src/suitability/mcda.py`, `config.yaml �
 Pairwise matrix on Saaty's 1–9 scale: λmax = 5.013, **consistency ratio 0.003** (< 0.1).
 
 **Why the overlay does worse than one of its own criteria.** Only distance to built-up carries
-real signal. Roads, water and land cover are close to chance on their own, and slope is weak. The
-AHP weights give the near-random criteria 70 % of the weight, which dilutes the one good signal:
-the overlay's 0.636 is below distance to built-up alone (0.763). Land cover helps a little
-(0.614 without it).
+real signal. The AHP weights give the near-random criteria 70 % of the weight, which dilutes
+it: the overlay scores 0.636, below distance to built-up alone (0.763), with a lift of only 1.86
+in the top 10 %.
 
-We did **not** tune the weights on the growth label. That label is the test set, so tuning on it
-would be leakage. A fixed, defensible expert overlay is what this baseline stands for. The
-learned models pick their own weighting from the 2020/21 change and do better.
+We did **not** tune the weights on `grew`, which is the test set. A fixed, defensible expert
+overlay is what this baseline stands for.
 
 **Is the land-cover criterion a leak?** No. D4 bans own-cell land cover from *trained* models,
-because the fractions sum to 1 − built and a model would learn the label from them. MCDA is not
-trained, and the validation scores only cells that were non-built in 2018/19. The score metadata
-lists it as `own_cell_inputs`, apart from `features`, so the leakage check
-(`schema.check_model_inputs`) still applies to every learned model.
+because the fractions sum to 1 − built. MCDA is not trained, and the validation scores only
+cells that were non-built in 2018/19. The score metadata lists it as `own_cell_inputs`, apart
+from `features`.
 
-## 4. Held-out building check (P6.6)
+## 6. Held-out building check (P6.6)
 
-Do surroundings identify building locations in areas a model never saw? Reference cells (OSM
-buildings, plus ESRI built cells where OSM has none) are held out by 2 km block. Each scorer
-learns from the other blocks and ranks every non-excluded cell in the held-out blocks.
+Reference cells are held out by 2 km block. Each scorer learns from the other blocks and ranks
+every non-excluded cell in the held-out blocks.
 
 | Scorer | AUC (held-out reference vs other cells) | Median percentile (best possible 70.0) |
 |---|---|---|
@@ -84,14 +125,15 @@ learns from the other blocks and ranks every non-excluded cell in the held-out b
 | Distance to built-up | 0.887 | 65.5 |
 | kNN similarity, 500 m rings only | 0.871 | 66.9 |
 
-Reference cells are about 60 % of the non-excluded cells, so even a perfect scorer reaches a
-median percentile of only about 70. AUC is the fair measure. Keeping both ring scales (250 m and
-500 m) beats 500 m only, despite their correlation (r 0.91–0.95, notebook 03). Figure:
-`chart_holdout.png`.
+Keeping both ring scales beats 500 m only, despite their correlation (r 0.91–0.95, notebook 03).
 
-## 5. Sensitivity (P7.6)
+**Self-query sanity:** for every sampled building, a cell within one cell of it is in the top
+1 % of the query's ranking, even with its own cell left out (Phase 6 gate,
+`scripts/verify_similarity.py`).
 
-`src/suitability/sensitivity.py` → `outputs/metrics/sensitivity.json`; figure `chart_sensitivity.png`.
+## 7. Sensitivity (P7.6)
+
+`src/suitability/sensitivity.py` → `sensitivity.json`; figure `chart_sensitivity.png`.
 
 **Slope threshold** (exclusion mask and the MCDA slope criterion):
 
@@ -102,9 +144,9 @@ median percentile of only about 70. AUC is the fair measure. Keeping both ring s
 | 20° | 158 | 15,762 | 1,130 | 0.780 | 0.765 | 0.633 |
 
 **Number of clusters k** (final run): class shares move by about 1 percentage point and agreement
-with ESRI on land cells stays at 96.6–98.8 %. k = 5 agrees slightly better with ESRI, but it loses
-the steep-rangeland cluster (the Bannerghatta hills): forest drops from 5.0 % to 3.9 %. k = 7 keeps
-the best silhouette (0.606).
+with ESRI on land cells stays at 96.6–98.8 %. k = 5 agrees slightly better with ESRI but loses
+the steep-rangeland cluster (the Bannerghatta hills): forest drops from 5.0 % to 3.9 %. k = 7
+keeps the best silhouette (0.606).
 
 **Cell size** (features and labels rebuilt at each size):
 
@@ -114,32 +156,37 @@ the best silhouette (0.606).
 | **100 m** | 58,218 | 15,658 | 1,125 | **0.779** | **0.763** | **0.636** |
 | 200 m | 14,567 | 4,322 | 148 | 0.834 | 0.825 | 0.733 |
 
-AUCs are **not comparable across cell sizes**: the growth label itself changes with the cell
-("≥ 50 % built" in 50 m vs 200 m), and at 200 m only 148 cells grew, with 42 change-RF training
-positives. **What holds everywhere is the ranking: change RF > distance to built-up > MCDA, at every
-slope threshold and every cell size.**
+AUCs are **not comparable across cell sizes**: the growth label itself changes with the cell,
+and at 200 m only 148 cells grew. **What holds everywhere is the ranking: change RF > distance to
+built-up > MCDA.**
 
-## 6. To be added (Harsh, P7.4)
+## 8. Final map
 
-- Top-N hit rate and lift in the top 10 % / 30 % for every score (target: lift ≥ 2 in the top 10 %).
-- TOC curves.
-- AUC by LEI growth type (adjacent vs outlying; outlying is expected to be harder).
-- Group ablation (drop one feature group at a time).
-- Combined score and suitability classes: S1 + S2 hit rate; precision in the top 10 %.
+The final run applies the same models to the latest data (2023 land cover, OSM pinned at
+2026-10-01):
+- **Classes** (usable cells only; forest, built-up and excluded are N): S1 1,382 cells, S2
+  2,762, S3 4,144, N 5,526 (`map_suitability_classes.png`).
+- **Candidate sites:** 557 S1 patches (1,382 ha). The 20 best patches of at least 5 ha are the
+  top sites (`outputs/candidates.gpkg` / `.csv`, interactive map `outputs/map.html`).
+- **Check against an independent source:** the top sites overlap OSM lakes by 0.06 ha and
+  protected areas by 0 ha.
 
-## 7. Misses and limitations
+## 9. Misses and limitations
 
-- **The learned model only just beats distance to built-up** (+0.016 AUC). Growth here is mostly
-  edge expansion. A model that adds roads, terrain and land-cover context gains little over "next
-  to existing built-up land".
+- **Mostly edge expansion.** The combined score beats distance to built-up by 0.034 AUC: a real
+  but modest gain. Growth here is mostly next to existing built-up land, which a single
+  distance already captures. Outlying growth is not predicted by any model.
 - **OSM completeness.** Road mapping grew a lot between 2018 and today (median road density
-  3.0 → 12.4 km/km²), mostly through mapping effort, not construction. Each run therefore uses its
-  own OSM snapshot, and the RF uses within-year percentiles. OSM buildings cover only about 1 % of
-  built cells in the south in 2018, so ESRI built cells fill the reference set. Almost no buildings
-  are typed, so similarity per building type was not possible.
-- **Land-cover errors.** ESRI and WorldCover disagree on built-up land (62 % vs 33 % of the AOI):
-  ESRI generalises urban areas. Growth labels inherit ESRI's errors; the two-year rule (D3)
-  removes flicker but not systematic bias.
+  3.0 → 12.4 km/km²), mostly through mapping effort, not construction.
+  - Each run uses its own OSM snapshot, and the RF uses within-year percentiles.
+  - OSM buildings cover only about 1 % of built cells in the south in 2018, so ESRI built cells
+    fill the reference set.
+  - Almost no buildings are typed, so similarity per building type (P6.7) was not possible.
+- **Land-cover errors.** ESRI and WorldCover disagree on built-up land (62 % vs 33 % of the
+  AOI): ESRI generalises urban areas. Growth labels inherit ESRI's errors; the two-year rule
+  (D3) removes flicker but not systematic bias.
+- **Small candidate patches.** Half of the S1 patches are single 1-ha cells, often small
+  pockets inside built-up areas. Top sites are therefore taken from patches of at least 5 ha.
 - **Past growth ≠ good planning.** Every score learns or encodes where building *has* happened,
-  not where it *should*. Protected areas, water and steep slopes are excluded, but other planning
-  constraints (zoning, flood risk, infrastructure capacity) are not in the data.
+  not where it *should*. Protected areas, water and steep slopes are excluded, but other
+  constraints (zoning, flood risk, infrastructure capacity, land ownership) are not in the data.
