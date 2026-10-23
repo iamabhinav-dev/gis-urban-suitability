@@ -741,6 +741,36 @@ The project is **complete** when:
 6. The report explains the method, results, limitations and possible improvements.
 7. Every PR has been reviewed by the other teammate.
 
+### 14.1 Final status (2026-10-23)
+
+**Functional requirements**
+
+| Group | Status | Evidence |
+|---|---|---|
+| FR-1 Configuration | Met | all parameters in `config/config.yaml`; AOI in `config/aoi.geojson` |
+| FR-2 Data acquisition | Met | `src/download/`; manifest with checksums and extents; OSM 2018 and current snapshots both pinned by date |
+| FR-3 Preprocessing | Met | one 10 m reference grid; rasters copied exactly where possible (`verify_raw_data.py`, `verify_preprocessed.py`) |
+| FR-4 Grid, features, labels | Met | C1–C5; persistent growth labels with LEI types |
+| FR-5 Land classification | Met | K-Means k = 7, centroid rules, exclusion mask; 96.6 % agreement with ESRI, 64.0 % with WorldCover on land cells |
+| FR-6 Similarity and learned models | Met, except per-type similarity (Q7) | single query with explanation, aggregate kNN (AUC 0.773), change RF (0.779), state RF (0.702), out-of-fold scores |
+| FR-7 Suitability mapping | Met | MCDA/AHP (CR 0.003), combined score (w = 0.3 / 0.7, chosen on the training label), S1–S3 / N, 557 candidate patches, top 20 sites |
+| FR-8 Validation | Met | `src/suitability/validate.py` → `validation.json`: AUC, lift, TOC, LEI split, ablation, S1+S2 hit rate; sensitivity to cell size, slope and k |
+| FR-9 Visualisation | Met | 300 dpi maps and charts (`outputs/figures/`), `outputs/map.html` |
+| FR-10 Reproducibility | Met | `python -m src.pipeline` with `--from-stage`; full run 12.4 min after the downloads |
+
+**Targets (§9.8):** best model ≥ distance to built-up: **met** (combined score 0.797 vs 0.763). Lift ≥ 2 in the top 10 %: **met** (3.45). Self-query in the top 1 %: **met**. Outlying growth is not predicted by any model (AUC ~0.51), as expected; explained in `docs/validation.md` and the report.
+
+**Deliverables:** D1–D16 all present. The report (D14) and slides (D15) are LaTeX sources in `report/`; their PDFs are built locally (not committed: over the 1 MB file limit).
+
+**Success criteria (§14):**
+1. Deliverables: met.
+2. Fresh clone → pipeline end to end: met (`scripts/compare_projects.py`; the validation run reproduces exactly).
+3. `pytest`: met (unit, contract and phase gates 0–8).
+4. `validation.json` with every model and baseline, targets met: met.
+5. Leakage guards enforced by tests: met (`check_model_inputs`, time-travel tests, out-of-fold and spatial-fold tests, gate 6).
+6. Report: met.
+7. PR review by the other teammate: not met for the Phase 6–8 packages, which were committed directly to `main`.
+
 ---
 
 ## 15. Development phases and timeline
@@ -846,13 +876,13 @@ Both tracks meet only through the contract files (§13). Each develops against t
 |---|---|---|
 | Q1 | Study area | **Closed:** Bengaluru South [D1], confirmed by Harsh 2026-10-01 |
 | Q2 | Submission deadline and intermediate reviews | **Closed:** final submission Tue 2026-10-06 |
-| Q3 | Report format / length required by the instructor | Open: not yet specified by the instructor (Abhinav, P0.12). **Working default until then:** a PDF report of about 15–20 pages (A4, 11 pt) with the sections in Tasks P8.5–P8.7, 300 dpi figures and a consistent author–year reference style, plus 10–15 slides. Replace if the instructor gives a format. |
+| Q3 | Report format / length required by the instructor | **Closed:** no format was given; the working default was delivered (20-page A4 PDF report, author–year references, 300 dpi figures; 16 slides) |
 | Q4 | Grid cell size | **Closed:** 100 m; 50 / 200 m in the sensitivity runs |
 | Q5 | Cropland usable or excluded? | **Closed:** usable but flagged [D10] |
 | Q6 | Slope threshold | **Closed:** 15° [D10]; revisited in the sensitivity runs |
-| Q7 | Similarity per building type? | Open (stretch, depends on OSM tags) |
+| Q7 | Similarity per building type? | **Closed: not feasible:** 99.5 % of the 2018 and 94 % of the current OSM buildings are untyped (`building=yes`) |
 | Q8 | Accept rules D11 (out-of-fold RF scores) and D12 (time-travel rule)? | **Closed:** agreed by both, 2026-10-01 (§9.9) |
-| Q9 | Refine the AOI from the bbox to a planning boundary? | Open (optional) |
+| Q9 | Refine the AOI from the bbox to a planning boundary? | **Closed:** kept the 582 km² rectangle (all results and the sensitivity runs use it) |
 
 ---
 
@@ -908,3 +938,4 @@ Starting points. The literature review (J6) extends these to ≥ 10 papers.
 | 2026-09-27 | 1.0 | Initial PRD | Harsh |
 | 2026-10-01 | 1.1 | Aligned with execution_plan decisions D1–D10 and the swapped tracks. Main changes: study area; ESRI as the LULC source for everything; years 2018–2023 with persistent labels; OSM snapshots; leakage rule D4; Euclidean similarity; change RF; LEI; contracts C1–C8; baselines-first validation. Added rules D11 (out-of-fold RF scores) and D12 (time-travel rule), pending Abhinav's agreement | Harsh |
 | 2026-10-01 | 1.1 | Phase 0 close-out: study area confirmed; deadline 2026-10-06 recorded; plan compressed into 1–6 October with full scope | Harsh |
+| 2026-10-23 | 1.2 | Final status (§14.1): requirements, targets, deliverables and success criteria marked met / not met; Q3, Q7, Q9 closed; current OSM snapshot pinned to 2026-10-01 | Abhinav |

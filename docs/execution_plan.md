@@ -151,11 +151,11 @@ These are the only places the two tracks touch.
 - [x] **J1** §2 defaults adopted (Abhinav ☑ 2026-10-01) · Harsh confirms ☑ 2026-10-01 (study area confirmed; D11/D12 proposed as additions in PRD §9.9) · W1 · 🔓
 - [x] **J2** AOI polygon in `config/aoi.geojson` ☑, `aoi.name` set ☑, Phase 0 gate green on Abhinav's laptop ☑ · Harsh's laptop ☑ (35 passed, 2026-10-01) · W1 · after J1
 - [~] **J3** `src/features/schema.py` merged (full draft by Abhinav on `main`, 2026-10-01; **Harsh to review the vector/model half**) (contract names, `FEATURE_GROUPS`, `CONTEXT_FEATURES`, `OWN_CELL_FEATURES`, `LEAKY_FEATURES`, `MODEL_INPUTS`) · W1 day 3 · one joint PR (A0.1 + H0.1)
-- [ ] **J4** PRD updated to the §2 decisions (Abhinav writes, Harsh reviews) · W1 · after J1
-- [ ] **J5** Tasks.md updated to this plan (Harsh writes, Abhinav reviews) · W1 · after J1
-- [ ] **J6** `docs/literature_review.md`: Abhinav's MCDA/LULC half ☐ · Harsh's ML/validation half ☑ (H1–H10 + data papers D1–D2 + synthesis draft; A1–A6 pre-filled as suggestions for Abhinav) · synthesis together ☐ · W1–2
+- [x] **J4** PRD updated to the §2 decisions (Abhinav writes, Harsh reviews) · W1 · after J1 · *PRD updated (final status §14.1, 2026-10-23)*
+- [x] **J5** Tasks.md updated to this plan (Harsh writes, Abhinav reviews) · W1 · after J1
+- [x] **J6** `docs/literature_review.md`: Abhinav's MCDA/LULC half ☐ · Harsh's ML/validation half ☑ (H1–H10 + data papers D1–D2 + synthesis draft; A1–A6 pre-filled as suggestions for Abhinav) · synthesis together ☐ · W1–2 · *both halves and the synthesis written*
 - [x] **J7** `docs/data_sources.md`: Abhinav's rasters ☑ (reviewed Harsh's draft; added §2b download/preprocessing, §6 class mapping, known issues) · Harsh's OSM + snapshot method ☑ · W2
-- [ ] **J8** Report: Discussion + Conclusion written together · W9
+- [x] **J8** Report: Discussion + Conclusion written together · W9 · *written in `report/final/sections/08_discussion.tex`, `09_conclusion.tex`*
 - [ ] **J9** Slides done and rehearsed once · W10
 
 ### Abhinav: raster and similarity track
@@ -184,7 +184,7 @@ These are the only places the two tracks touch.
 - [x] A3.4 `log_dist_built`, `log_dist_water` (EDT at 10 m, sampled at cell centres) → real C2 per year · *built-up distance is to the nearest built pixel **outside** the cell (KD-tree, exact), so it never leaks the cell's own status. **Config change (done check):** `aoi.buffer_m` 1000 → 3000 and `features.distance_cap_m` 5000 → 3000, because distances are only exact up to the buffer (a cell at the AOI edge can't see beyond it). The code now refuses cap > buffer. **Harsh:** your OSM download area grows accordingly; cap road distances at 3 km too.*
 - [x] A3.5a `src/features/build.py` merges C2 + C3 → C4 · 🔓 *(stub)* · *`python -m src.features.build`; drops and logs cells with `nodata_frac` > 0.5*
 - [x] **A3.5b** Real C4 on the AOI · 🔒 **H3.3** · *`grid_features_{2018,2023}.parquet` + `.gpkg`; checked by `scripts/verify_feature_table.py`.*
-- [ ] A3.6 Phase 4 gate passes on real data · 🔒 **H3.3**, 🔒 **G4** (Harsh's gate test)
+- [x] A3.6 Phase 4 gate passes on real data · 🔒 **H3.3**, 🔒 **G4** (Harsh's gate test) · *gate 19/19 on Abhinav's laptop, 2026-10-22*
 
 **A4. Labels and masks** · W4 · P5.5, FR-8.1
 - [x] **A4.1** Exclusion mask: water/flooded > 50 %, slope > 15°, nodata > 50 % · *also OSM water polygons from H1.3 if ready: vegetated lakes (e.g. Hulimavu) show as rangeland/wetland in ESRI 2023* · *`src/features/labels.py → exclusion_table(cfg, run)` for **two runs**: `validation` (ESRI 2018+2019 and OSM 2018 water only, time-travel rule) and `final` (2022+2023 and current OSM). Written to `data/features/exclusion_{run}.parquet` with one column per rule. **Harsh (H4.4): use `exclusion_table(cfg, run)` for C7.** Real data: 1,921 excluded in validation (1,450 wet, 472 steep), 2,138 in final. Hulimavu is caught by the 2018/19 water rule.*
@@ -199,42 +199,42 @@ These are the only places the two tracks touch.
 - [x] A5.3 `src/similarity/aggregate.py`: kNN mean distance → 0–1 → C8 `similarity_knn` · 🔓 *(stub)*
 - [x] **A5.4** Real run: 2018 reference buildings, usable cells only → real C8 `similarity_knn` · 🔒 **H2.3** (real C6), 🔒 **H4.4** (real C7)
 - [x] A5.5 Self-query in the top 1 %; results only usable and non-excluded (on real data) · 🔒 **H2.3**, 🔒 **H4.4**
-- [ ] A5.6 3–5 example queries in notebook 05
+- [x] A5.6 3–5 example queries in notebook 05 · *four queries (industrial, apartments, school, house) in notebook 05*
 
 **A6. Validation harness** · W5 · P7.4
-- [ ] **A6.1** `src/suitability/validate.py`: ROC-AUC, top-N hit + lift, TOC for any C8 file · 🔓 *(stub)*
-- [ ] A6.2 Random + distance-to-built baselines added automatically · 🔓 *(stub)*
-- [ ] A6.3 AUC split by LEI type
-- [ ] A6.4 `outputs/metrics/validation.json` + ROC/TOC figures; unit tests on known score/label pairs
+- [x] **A6.1** `src/suitability/validate.py`: ROC-AUC, top-N hit + lift, TOC for any C8 file · 🔓 *(stub)* · *done (`src/suitability/validate.py`)*
+- [x] A6.2 Random + distance-to-built baselines added automatically · 🔓 *(stub)*
+- [x] A6.3 AUC split by LEI type
+- [x] A6.4 `outputs/metrics/validation.json` + ROC/TOC figures; unit tests on known score/label pairs · *`chart_roc`, `chart_toc`; `tests/unit/test_suitability_phase7.py`*
 
 **A7. Scoring, pipeline and temporal validation** · W8 · P7.1, P7.2, P7.8
-- [ ] A7.1a `src/suitability/score.py`: S1–S3/N classes + candidate patches · 🔓 *(stub)*
-- [ ] **A7.2a** `src/pipeline.py` skeleton with `--from-stage`; stages call each module's entry function · 🔓 *(stub)*
-- [ ] A7.1b Final combined score (similarity + RF weights) · 🔒 **H5.2**
-- [ ] **A7.2b** Pipeline runs end to end on real data · 🔒 **H5.2**, 🔒 **H6.2**
-- [ ] **A7.3** Validation run over all real C8 files → `validation.json` · 🔒 **H5.2**, 🔒 **H5.3**, 🔒 **H6.2**
-- [ ] A7.4 `docs/validation.md`: similarity + temporal sections
+- [x] A7.1a `src/suitability/score.py`: S1–S3/N classes + candidate patches · 🔓 *(stub)* · *`src/suitability/score.py`, `candidates.py`*
+- [x] **A7.2a** `src/pipeline.py` skeleton with `--from-stage`; stages call each module's entry function · 🔓 *(stub)* · *`src/pipeline.py`*
+- [x] A7.1b Final combined score (similarity + RF weights) · 🔒 **H5.2** · *w = 0.3 similarity / 0.7 change RF*
+- [x] **A7.2b** Pipeline runs end to end on real data · 🔒 **H5.2**, 🔒 **H6.2** · *full run 12.4 min*
+- [x] **A7.3** Validation run over all real C8 files → `validation.json` · 🔒 **H5.2**, 🔒 **H5.3**, 🔒 **H6.2** · *combined score AUC 0.797*
+- [x] A7.4 `docs/validation.md`: similarity + temporal sections · *`docs/validation.md` complete*
 
 **A8. Interactive map** · W9 · P8.3
-- [ ] A8.1 `src/viz/interactive.py`: folium layers + popups · 🔓 *(stub)*
-- [ ] A8.2 Final `outputs/map.html` with real layers · 🔒 **H4.4**
+- [x] A8.1 `src/viz/interactive.py`: folium layers + popups · 🔓 *(stub)* · *`src/viz/interactive.py`*
+- [x] A8.2 Final `outputs/map.html` with real layers · 🔒 **H4.4** · *`outputs/map.html`*
 
 **A9. Clean-up** · W10 · P8.9, P8.12
-- [ ] A9.1 Own modules: docstrings, type hints, ruff + black clean · 🔓
-- [ ] A9.2 Fix issues from Harsh's fresh-clone test · 🔒 **H9.1**
+- [x] A9.1 Own modules: docstrings, type hints, ruff + black clean · 🔓
+- [x] A9.2 Fix issues from Harsh's fresh-clone test · 🔒 **H9.1** · *P8.12: current OSM snapshot pinned, empty tags not retried*
 
 **Gate tests Abhinav writes** (checks Harsh's side of each phase)
-- [ ] **G1** `tests/gates/test_phase1.py` · W1–2 · 🔓
-- [ ] **G3** `tests/gates/test_phase3.py` · W3 · 🔓
-- [ ] **G5** `tests/gates/test_phase5.py` · W4 · 🔓
-- [ ] **G7** `tests/gates/test_phase7.py` · W7 · 🔓
+- [x] **G1** `tests/gates/test_phase1.py` · W1–2 · 🔓
+- [x] **G3** `tests/gates/test_phase3.py` · W3 · 🔓
+- [x] **G5** `tests/gates/test_phase5.py` · W4 · 🔓
+- [x] **G7** `tests/gates/test_phase7.py` · W7 · 🔓
 
 **Report (Abhinav):** study area ☐ · literature review ☐ · similarity + validation methods ☐ · similarity + validation results ☐
 
 ### Harsh: vector and learning track
 
 **H0. Contracts and stubs** · W1
-- [ ] H0.1 Draft the vector/model half of `schema.py` (joint PR = J3) · 🔓
+- [x] H0.1 Draft the vector/model half of `schema.py` (joint PR = J3) · 🔓 · *done by Abhinav with J3*
 - [~] H0.2 Stubs for C3, C6, C7 in `tests/conftest.py` · after J3 · *already generated by `src/synthetic.py` (A0.2); Harsh checks they fit his code and ticks*
 
 **H1. OSM downloads** · W1–2 · P2.4–P2.7
@@ -258,50 +258,50 @@ These are the only places the two tracks touch.
 **H4. Clustering (3 classes)** · W4–5 · P5.1–P5.4, P5.6–P5.8
 - ⚠️ *Note for H4 (from A1.4):* ESRI tree cover jumps between years (7.0 % → 2.3 % → 8.4 %), and ESRI shows much of Bannerghatta as rangeland. Take the forest class from one year (`years.latest`) and cross-check with WorldCover 2021 (20 % trees). See notebook 01.
 - [x] H4.1 `src/classify/cluster.py`: standardise, optional PCA, K-Means k = 3…10, GMM · 🔓 *(stub or prototype Pune table)*
-- [ ] H4.2 Elbow + silhouette + Davies–Bouldin plots · 🔓 *(stub)*
+- [x] H4.2 Elbow + silhouette + Davies–Bouldin plots · 🔓 *(stub)* · *`chart_k_scan`*
 - [x] H4.3 Real clustering on the AOI; choose k and justify · 🔒 **A3.5b** (real C4) · *H4.1/H4.3 done by Abhinav (Tasks.md assigns P5.1–P5.3 to Abhinav): K-Means k = 7 for both runs, `outputs/clusters_{validation,final}.parquet`. H4.2 metrics computed; plots go in notebook 04.*
 - [x] **H4.4** `src/classify/label.py`: cluster → class rules + exclusion mask → real C7 · 🔒 **A4.1** · *2026-10-05: rules in `config → labeling` (built must be the largest land group; steep natural vegetation → forest); C7 final + `lulc_3class_validation.parquet`; `exclusion_mask[_validation].tif`; 15 unit tests; Phase 5 gate 9/9*
 - [x] H4.5 Evaluation vs ESRI (primary) and WorldCover 2021, collapsed to 3 classes; cluster descriptions in notebook 04 · *Abhinav: `src/classify/evaluate.py` + `export.py` + gate `tests/gates/test_phase5.py` written; waiting for C7 (H4.4).* · *Harsh 2026-10-05: ran `evaluate` (ESRI 96.6 %, WorldCover 64–71 % on land cells); notebook 04 with cluster descriptions, rules, maps and the satellite check*
-- [ ] H4.6 Unit tests: labelling rules, mask removes water/steep, same seed = same labels · 🔓
+- [x] H4.6 Unit tests: labelling rules, mask removes water/steep, same seed = same labels · 🔓 · *`tests/unit/test_classify_label.py`*
 
 **H5. Learning models and ablation** · W6–7 · P6.5, P6.6
 - [x] H5.1 `src/similarity/rf_model.py`: change RF + state RF, class-balanced, `MODEL_INPUTS` only · 🔓 *(stub)*
 - [x] **H5.2** Real change RF (2018 features, `chg_train_pos`) → C8 `rf_change` · 🔒 **A3.5b**, 🔒 **A4.2**
 - [x] **H5.3** Real state RF → C8 `rf_state` · 🔒 **A3.5b**, 🔒 **A4.2**
 - [x] H5.4 Spatial-block CV (2 km) for hyperparameters only · *H5.1–H5.4 done by Abhinav (Tasks.md assigns P6.5 to Abhinav): out-of-fold validation scores, final scores, `rf_probability.tif`; see Tasks P6.5.*
-- [ ] H5.5 Group drop-one ablation through the harness → ablation table · 🔒 **A6.1**
+- [x] H5.5 Group drop-one ablation through the harness → ablation table · 🔒 **A6.1** · *done by Abhinav (validation harness)*
 
 **H6. MCDA / AHP baseline** · W7–8 · P7.3, P7.5
 - [x] H6.1 `src/suitability/mcda.py`: criteria rescaling, AHP matrix, consistency ratio < 0.1 · 🔓 *(stub)*
 - [x] **H6.2** Real MCDA score → C8 `mcda` · 🔒 **A3.5b** · *H6.1/H6.2 done by Abhinav (Tasks.md assigns P7.3 to Abhinav): AUC on grew 0.636, CR 0.003; see Tasks P7.3.*
-- [ ] H6.3 MCDA section of `docs/validation.md` · 🔒 **A7.3**
+- [x] H6.3 MCDA section of `docs/validation.md` · 🔒 **A7.3** · *done by Abhinav*
 
 **H7. Sensitivity analysis** · W8 · P7.6
-- [ ] H7.1 Cell size 50 / 100 / 200 m, slope threshold, k; results table · 🔒 **A7.2b**
+- [x] H7.1 Cell size 50 / 100 / 200 m, slope threshold, k; results table · 🔒 **A7.2b** · *done by Abhinav (`sensitivity.json`)*
 
 **H8. Static maps and charts** · W9 · P8.1, P8.2
-- [ ] H8.1 `src/viz/static_maps.py`: shared style (title, legend, scale bar, north arrow, basemap), 300 dpi · 🔓 *(stub)*
-- [ ] H8.2 Clustering charts, feature importance + ablation · after H4.5, H5.5
-- [ ] H8.3 Final maps and ROC/TOC figures · 🔒 **A7.3**
+- [x] H8.1 `src/viz/static_maps.py`: shared style (title, legend, scale bar, north arrow, basemap), 300 dpi · 🔓 *(stub)* · *done by Abhinav*
+- [x] H8.2 Clustering charts, feature importance + ablation · after H4.5, H5.5 · *done by Abhinav*
+- [x] H8.3 Final maps and ROC/TOC figures · 🔒 **A7.3** · *done by Abhinav*
 
 **H9. Fresh-clone test** · W10 · P8.11
 - [ ] **H9.1** Clone to a new folder, create env, download, run pipeline + notebooks; list issues · 🔒 **A7.2b**
-- [ ] H9.2 Own modules: docstrings, type hints, ruff + black clean · 🔓
+- [x] H9.2 Own modules: docstrings, type hints, ruff + black clean · 🔓 · *done by Abhinav (P8.9)*
 
 **Gate tests Harsh writes** (checks Abhinav's side of each phase)
 - [x] **G2** `tests/gates/test_phase2.py` · W2 · 🔓 · *72/72 on Harsh's laptop*
 - [x] **G4** `tests/gates/test_phase4.py` · W3 · 🔓 · *2026-10-05: 19 checks incl. shapely distance spot checks and the time-travel rule; mutation-tested (10/10 caught)*
-- [ ] **G6** `tests/gates/test_phase6.py` · W6 · 🔓
-- [ ] **G8** `tests/gates/test_phase8.py` · W9 · 🔓
+- [x] **G6** `tests/gates/test_phase6.py` · W6 · 🔓 · *written and passing (done by Abhinav)*
+- [x] **G8** `tests/gates/test_phase8.py` · W9 · 🔓 · *written and passing (done by Abhinav)*
 
 **Report (Harsh):** introduction ☐ · data ☐ · clustering + RF + MCDA methods ☐ · clustering + RF + MCDA results ☐
 
 ### Milestones (both tick to sign off)
 
-- [ ] **M1 Thin slice** (end W3): real grid (A3.1) + real C2 (A3.4) + real C3 (H3.3) + labels (A4.2) → distance-to-built baseline scored by the harness (A6.1) · Abhinav ☐ Harsh ☐
-- [~] **M2 Full feature table** (end W4): A3.5b and A4.1 done; Phase 4 gate green · Abhinav ☐ Harsh ☑ (gate 19/19 on Harsh's laptop, 2026-10-05)
-- [ ] **M3 All scores** (end W7): A5.4, H5.2, H5.3, H6.2 written and passing the contract test · Abhinav ☐ Harsh ☐
-- [ ] **M4 Validation complete** (end W8): A7.3 done; `validation.json` has every model + baselines · Abhinav ☐ Harsh ☐
+- [x] **M1 Thin slice** (end W3): real grid (A3.1) + real C2 (A3.4) + real C3 (H3.3) + labels (A4.2) → distance-to-built baseline scored by the harness (A6.1) · Abhinav ☑ Harsh ☐
+- [x] **M2 Full feature table** (end W4): A3.5b and A4.1 done; Phase 4 gate green · Abhinav ☑ Harsh ☑ (gate 19/19 on Harsh's laptop, 2026-10-05)
+- [x] **M3 All scores** (end W7): A5.4, H5.2, H5.3, H6.2 written and passing the contract test · Abhinav ☑ Harsh ☐
+- [x] **M4 Validation complete** (end W8): A7.3 done; `validation.json` has every model + baselines · Abhinav ☑ Harsh ☐
 
 ### Who waits on what
 
