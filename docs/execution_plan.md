@@ -194,11 +194,11 @@ These are the only places the two tracks touch.
 - [x] A4.4 Unit tests on a synthetic 6-year stack; label counts logged · *done check: `scripts/verify_labels.py`*
 
 **A5. Building similarity** · W6–7 · P6.1, P6.3, P6.4, P6.7
-- [ ] A5.1 `src/similarity/profiles.py` from `MODEL_INPUTS` only; raises on own-cell or leaky features · 🔓 *(stub)*
-- [ ] A5.2 `src/similarity/query.py`: building ID or lat/lon → top-N usable cells (Euclidean; cosine optional) + feature explanation + GeoPackage/PNG · 🔓 *(stub)*
-- [ ] A5.3 `src/similarity/aggregate.py`: kNN mean distance → 0–1 → C8 `similarity_knn` · 🔓 *(stub)*
-- [ ] **A5.4** Real run: 2018 reference buildings, usable cells only → real C8 `similarity_knn` · 🔒 **H2.3** (real C6), 🔒 **H4.4** (real C7)
-- [ ] A5.5 Self-query in the top 1 %; results only usable and non-excluded (on real data) · 🔒 **H2.3**, 🔒 **H4.4**
+- [x] A5.1 `src/similarity/profiles.py` from `MODEL_INPUTS` only; raises on own-cell or leaky features · 🔓 *(stub)*
+- [x] A5.2 `src/similarity/query.py`: building ID or lat/lon → top-N usable cells (Euclidean; cosine optional) + feature explanation + GeoPackage/PNG · 🔓 *(stub)*
+- [x] A5.3 `src/similarity/aggregate.py`: kNN mean distance → 0–1 → C8 `similarity_knn` · 🔓 *(stub)*
+- [x] **A5.4** Real run: 2018 reference buildings, usable cells only → real C8 `similarity_knn` · 🔒 **H2.3** (real C6), 🔒 **H4.4** (real C7)
+- [x] A5.5 Self-query in the top 1 %; results only usable and non-excluded (on real data) · 🔒 **H2.3**, 🔒 **H4.4**
 - [ ] A5.6 3–5 example queries in notebook 05
 
 **A6. Validation harness** · W5 · P7.4

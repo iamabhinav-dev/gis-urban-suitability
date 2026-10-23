@@ -35,7 +35,6 @@ from collections.abc import Callable
 import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_auc_score
-from sklearn.neighbors import NearestNeighbors
 
 from src.classify.cluster import RUNS, run_year
 from src.config import load_config
@@ -43,6 +42,7 @@ from src.features import schema
 from src.io_utils import setup_logging
 from src.similarity import reference as rs
 from src.similarity import rf_model as rm
+from src.similarity.aggregate import knn_mean_distance
 
 log = logging.getLogger(__name__)
 
@@ -56,10 +56,15 @@ def _knn(cfg, cols: list[str]) -> Scorer:
     def score(X: pd.DataFrame, train_ref: np.ndarray, ids: np.ndarray) -> np.ndarray:
         Z = X[cols]
         Z = (Z - Z.mean()) / Z.std(ddof=0).replace(0, 1)
-        k = min(int(cfg["similarity"]["knn_k"]), len(train_ref))
-        nn = NearestNeighbors(n_neighbors=k).fit(Z.loc[train_ref].to_numpy())
-        d, _ = nn.kneighbors(Z.loc[ids].to_numpy())
-        return -d.mean(axis=1)
+        k = int(cfg["similarity"]["knn_k"])
+        d = knn_mean_distance(
+            Z.loc[train_ref].to_numpy(),
+            np.asarray(train_ref),
+            Z.loc[ids].to_numpy(),
+            np.asarray(ids),
+            k,
+        )
+        return -d
 
     return score
 
