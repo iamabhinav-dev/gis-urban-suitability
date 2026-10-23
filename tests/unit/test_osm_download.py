@@ -40,7 +40,10 @@ def _features(n_ways: int = 3) -> gpd.GeoDataFrame:
 
 def test_snapshots_and_layers(project):
     snaps = osm.snapshots(project)
-    assert snaps == {"2018": "2018-01-01T00:00:00Z", "current": None}
+    pinned = f"{project['osm']['snapshot_current']}T00:00:00Z"
+    assert snaps == {"2018": "2018-01-01T00:00:00Z", "current": pinned}
+    project.raw["osm"]["snapshot_current"] = None  # unpinned: the day of the download
+    assert osm.snapshots(project)["current"] is None
     assert "protected" not in osm.layers_for("2018")
     assert osm.layers_for("current") == ("roads", "water", "buildings", "protected")
     assert (
@@ -79,7 +82,7 @@ def test_download_falls_back_to_next_mirror_and_skips_rerun(project, monkeypatch
         )
 
     monkeypatch.setattr(osm, "_query", fake_query)
-    monkeypatch.setattr(osm.retry.__globals__["time"], "sleep", lambda s: None)
+    monkeypatch.setattr(osm.time, "sleep", lambda s: None)
 
     path = osm.download_layer(project, "2018", "roads")
     assert [m for m, _ in calls] == [
@@ -117,7 +120,7 @@ def test_all_mirrors_failing_is_a_clear_error(project, monkeypatch):
         raise ConnectionError("down")
 
     monkeypatch.setattr(osm, "_query", fail)
-    monkeypatch.setattr(osm.retry.__globals__["time"], "sleep", lambda s: None)
+    monkeypatch.setattr(osm.time, "sleep", lambda s: None)
     with pytest.raises(DownloadError, match="All Overpass mirrors failed"):
         osm.download_layer(project, "current", "water")
     assert not osm.osm_path(project, "current", "water").exists()
@@ -138,7 +141,7 @@ def test_one_tag_empty_on_all_mirrors_is_skipped_and_counted(project, monkeypatc
         )
 
     monkeypatch.setattr(osm, "_query", fake_query)
-    monkeypatch.setattr(osm.retry.__globals__["time"], "sleep", lambda s: None)
+    monkeypatch.setattr(osm.time, "sleep", lambda s: None)
     path = osm.download_layer(project, "current", "protected")
     assert gpd.read_file(path).name.tolist() == ["Bannerghatta National Park"]
     entry = Manifest.for_config(project).get(manifest_key(path, project.root))
@@ -194,3 +197,49 @@ def test_download_osm_runs_every_snapshot_layer(project, monkeypatch):
         ("current", "buildings"),
         ("current", "protected"),
     ]
+
+
+def test_empty_tag_costs_two_queries_without_retries(project, monkeypatch):
+    """Regression (P8.11): an empty tag was retried on every mirror (~7 min each)."""
+
+    class InsufficientResponseError(Exception):
+        pass
+
+    calls, sleeps = [], []
+
+    def fake_query(bbox, tags, date, mirror):
+        calls.append(mirror)
+        raise InsufficientResponseError("No matching features")
+
+    monkeypatch.setattr(osm, "_query", fake_query)
+    monkeypatch.setattr(osm.time, "sleep", lambda s: sleeps.append(s))
+    with pytest.raises(osm.NoFeatures):
+        osm.fetch_features(project, (0, 0, 1, 1), {"leisure": "nature_reserve"}, None)
+    mirrors = project["osm"]["overpass_mirrors"]
+    assert calls == mirrors[:2] and not sleeps
+
+
+def test_empty_answer_on_one_mirror_then_data_on_the_next(project, monkeypatch):
+    """A timeout that osmnx reports as 'no features' must not hide real data."""
+
+    class InsufficientResponseError(Exception):
+        pass
+
+    def fake_query(bbox, tags, date, mirror):
+        if mirror == project["osm"]["overpass_mirrors"][0]:
+            raise InsufficientResponseError("No matching features")
+        return _features()
+
+    monkeypatch.setattr(osm, "_query", fake_query)
+    gdf, mirror = osm.fetch_features(project, (0, 0, 1, 1), {"highway": True}, None)
+    assert len(gdf) == len(_features()) and mirror == project["osm"]["overpass_mirrors"][1]
+
+
+def test_redownloads_when_the_pinned_date_changes(project, monkeypatch):
+    dates = []
+    monkeypatch.setattr(osm, "_query", lambda *a: dates.append(a[2]) or _features())
+    osm.download_layer(project, "current", "roads")
+    osm.download_layer(project, "current", "roads")  # same date: skipped
+    project.raw["osm"]["snapshot_current"] = "2026-11-01"
+    osm.download_layer(project, "current", "roads")
+    assert dates == ["2026-10-01T00:00:00Z", "2026-11-01T00:00:00Z"]

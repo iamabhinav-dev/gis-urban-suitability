@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import time
 from pathlib import Path
 
 import geopandas as gpd
@@ -37,7 +38,6 @@ from src.io_utils import (
     manifest_key,
     needs_download,
     record_download,
-    retry,
     setup_logging,
 )
 
@@ -90,9 +90,11 @@ OVERPASS_TIMEOUT_S = 900
 
 
 def snapshots(cfg) -> dict[str, str | None]:
-    """Snapshot name -> Overpass date (None = today)."""
+    """Snapshot name -> Overpass date (``current`` is pinned by ``osm.snapshot_current``;
+    None = the day of the download)."""
     date = str(cfg["osm"]["snapshot_baseline"])
-    return {date[:4]: f"{date}T00:00:00Z", "current": None}
+    cur = cfg["osm"].get("snapshot_current")
+    return {date[:4]: f"{date}T00:00:00Z", "current": f"{cur}T00:00:00Z" if cur else None}
 
 
 def layers_for(snapshot: str) -> tuple[str, ...]:
@@ -142,7 +144,15 @@ def _query(bbox, tags: dict, date: str | None, mirror: str) -> gpd.GeoDataFrame:
 
 
 class NoFeatures(DownloadError):
-    """Every mirror answered, but with no matching features."""
+    """The mirrors answered, but with no matching features."""
+
+
+EMPTY_CONFIRMATIONS = 2  # mirrors that must agree a tag has no features
+EMPTY_RETRY_WAIT_S = 20
+
+
+def _is_empty_answer(exc: BaseException) -> bool:
+    return type(exc).__name__ == "InsufficientResponseError"
 
 
 def fetch_features(cfg, bbox, tags: dict, date: str | None) -> tuple[gpd.GeoDataFrame, str]:
@@ -152,21 +162,29 @@ def fetch_features(cfg, bbox, tags: dict, date: str | None) -> tuple[gpd.GeoData
     reports an Overpass timeout that way, so callers must sanity-check counts (the
     Phase 2 gate compares them with the ohsome counts from P1.6).
     """
-    errors, empty = [], []
-    for mirror in cfg["osm"]["overpass_mirrors"]:
-        try:
-            gdf = retry(
-                lambda m=mirror: _query(bbox, tags, date, m),
-                attempts=2,
-                wait_s=20,
-                what=f"Overpass {mirror} {tags} {date or 'current'}",
-            )
-            return gdf, mirror
-        except DownloadError as exc:
-            errors.append(str(exc))
-            empty.append(type(exc.__cause__).__name__ == "InsufficientResponseError")
-            log.warning("mirror failed, trying the next one: %s", mirror)
-    if all(empty):
+    errors, n_empty = [], 0
+    mirrors = cfg["osm"]["overpass_mirrors"]
+    for mirror in mirrors:
+        what = f"Overpass {mirror} {tags} {date or 'current'}"
+        for attempt in (1, 2):
+            try:
+                return _query(bbox, tags, date, mirror), mirror
+            except Exception as exc:  # noqa: BLE001 - network / Overpass errors
+                if _is_empty_answer(exc):
+                    # an empty answer is an answer: don't retry it on the same mirror
+                    n_empty += 1
+                    log.info("%s: no matching features", what)
+                    break
+                log.warning("%s failed (attempt %d/2): %s", what, attempt, exc)
+                if attempt == 1:
+                    time.sleep(EMPTY_RETRY_WAIT_S)
+                else:
+                    errors.append(f"{what}: {exc}")
+        # osmnx reports a timeout like an empty answer, so confirm on a second mirror
+        if n_empty >= min(EMPTY_CONFIRMATIONS, len(mirrors)):
+            raise NoFeatures(f"No {tags} features on {n_empty} mirrors ({date or 'current'}).")
+        log.warning("mirror failed, trying the next one: %s", mirror)
+    if n_empty and not errors:
         raise NoFeatures(f"No {tags} features on any mirror ({date or 'current'}).")
     raise DownloadError(
         f"All Overpass mirrors failed for {tags} ({date or 'current'}):\n  "
@@ -199,12 +217,13 @@ def download_layer(
     if not force and not needs_download(out, manifest, cfg.root):
         entry = manifest.get(manifest_key(out, cfg.root)) or {}
         old = entry.get("source", {}).get("bbox_4326")
-        if old is not None and np.allclose(old, bbox, atol=1e-9):
+        old_date = entry.get("source", {}).get("date")
+        same_date = old_date == (snapshots(cfg)[snapshot] or "current (download date)")
+        if old is not None and np.allclose(old, bbox, atol=1e-9) and same_date:
             log.info("skip %s/%s (exists, checksum matches)", snapshot, out.name)
             return out
         log.info(
-            "%s/%s covers a different area than requested (AOI or buffer changed); "
-            "re-downloading",
+            "%s/%s covers a different area or date than requested; re-downloading",
             snapshot,
             out.name,
         )

@@ -101,6 +101,9 @@ vector:                      # OSM cleaning (P3.4-P3.6, PRD FR-3.5)
 
 osm:
   snapshot_baseline: "2018-01-01"   # decisions D8, D9 (Overpass [date:] query)
+  # the "current" snapshot is pinned too, so the final map doesn't depend on the day of
+  # the download (P8.11: three weeks of OSM edits changed 25 cells of the final map)
+  snapshot_current: "2026-10-01"
   overpass_mirrors:
     - https://overpass-api.de/api/interpreter
     - https://overpass.kumi.systems/api/interpreter
