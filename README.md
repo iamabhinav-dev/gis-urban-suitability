@@ -14,6 +14,9 @@ The pipeline:
    with land that became built in 2022 and 2023, next to a classic MCDA/AHP overlay and simple
    baselines.
 
+**Live site:** <https://iamabhinav-dev.github.io/gis-urban-suitability/> (interactive map,
+report and slides; published from the `gh-pages` branch).
+
 ## Results in brief
 
 | Score (computed as of 2018) | AUC on growth by 2022/23 | Lift in the top 10 % |
