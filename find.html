@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en" class="app-html">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Find Places Like A</title>
+<meta name="description" content="Pick a building in Bengaluru South and find the usable land whose surroundings are most like it.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="css/site.css?v=2f1fd48ee0">
+</head>
+<body class="app-page">
+<nav class="nav" aria-label="Site">
+  <div class="nav-inner">
+    <a class="brand" href="./"><b>Bengaluru South</b><span>Urban land suitability</span></a>
+    <a class="link" href="find.html" aria-current="page">Find places like A</a>
+    <a class="link" href="map.html">Full map</a>
+    <a class="link" href="./#sites">Top sites</a>
+    <a class="link" href="./#validation">Validation</a>
+    <a class="link" href="./#report">Report</a>
+  </div>
+</nav>
+
+<div class="app">
+  <div id="map" class="app-map" role="application" aria-label="Map of the study area. Click a place to use it as building A."></div>
+
+  <aside class="panel" aria-live="polite">
+    <header class="panel-head">
+      <p class="eyebrow" style="margin-bottom:6px">Building similarity</p>
+      <h1 class="panel-title">Find places like A</h1>
+      <p class="muted">To build something like the building at <b>A</b>, where is the usable land
+        with the most similar surroundings?</p>
+    </header>
+
+    <div class="step">
+      <div class="step-label">Choose A</div>
+      <p class="small muted" style="margin:0 0 8px">Click anywhere on the map, or start from an example:</p>
+      <div id="examples" class="chips"></div>
+    </div>
+
+    <div class="step">
+      <div class="step-label">Options</div>
+      <div class="controls">
+        <label for="opt-n">Results
+          <select id="opt-n">
+            <option value="10">10</option>
+            <option value="20" selected>20</option>
+            <option value="50">50</option>
+          </select>
+        </label>
+        <label for="opt-r">Search
+          <select id="opt-r">
+            <option value="0" selected>whole study area</option>
+            <option value="10">within 10 km of A</option>
+            <option value="5">within 5 km of A</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <div id="status" class="status">Loading data (2.5 MB)…</div>
+
+    <div id="a-card" class="a-card" hidden></div>
+
+    <div id="results-wrap" hidden>
+      <div class="step-label" style="display:flex; justify-content:space-between; align-items:baseline; gap:12px">
+        <span>Most similar usable land</span>
+        <button id="fit" class="linkish small" type="button">Show all on map</button>
+      </div>
+      <ol id="results" class="results"></ol>
+    </div>
+
+    <div id="compare" class="compare" hidden></div>
+
+    <details class="about small">
+      <summary>How the matching works</summary>
+      <p>Every 100 m cell is described by 20 numbers about its <b>surroundings</b>, never the
+        cell itself: shares of tree, crop, rangeland, bare, water and built-up land within 250 and
+        500 m; distances to built-up land, major roads, any road and water; road density;
+        elevation and slope. Each number is standardised, and two cells are compared by the
+        straight-line (Euclidean) distance between their 20 numbers.</p>
+      <p><b>Similarity</b> rescales that distance: 100 % means identical surroundings, 0 % means
+        as different as the 1 % least similar usable cells.</p>
+      <p>Only <span class="sw" style="background:var(--s3)"></span>usable land is searched (not
+        built-up, forest, water or protected land). The S1–S3 badge is the cell's class on the
+        suitability map. Data: land cover 2023, OpenStreetMap 2026-10-01. The calculation is the
+        same as <code>src/similarity/query.py</code> and runs in your browser.</p>
+    </details>
+  </aside>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
+<script src="js/sheet.js?v=adaeab7394"></script>
+<script src="js/similar-core.js?v=99497eb76f"></script>
+<script src="js/find.js?v=499d37ba6d"></script>
+</body>
+</html>

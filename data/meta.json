@@ -1,0 +1,290 @@
+{
+ "run": "final",
+ "years": {
+  "lulc": 2023,
+  "osm": "2026-10-01"
+ },
+ "lattice": {
+  "left": 770400.0,
+  "top": 1435100.0,
+  "cell_m": 100.0,
+  "rows": 307,
+  "cols": 302
+ },
+ "proj4": "+proj=utm +zone=43 +datum=WGS84 +units=m +no_defs",
+ "n_cells": 58218,
+ "n_usable": 13814,
+ "classes": {
+  "1": "built-up",
+  "2": "forest",
+  "3": "usable",
+  "4": "excluded"
+ },
+ "suitability": {
+  "1": "S1",
+  "2": "S2",
+  "3": "S3",
+  "4": "N"
+ },
+ "quant": 65535,
+ "columns": [
+  {
+   "name": "ring250_tree",
+   "label": "tree share within 250 m",
+   "min": 0.0,
+   "max": 1.0,
+   "unit": "%",
+   "show": "percent",
+   "mean": 0.023939582525658587,
+   "sd": 0.07044381012372417
+  },
+  {
+   "name": "ring250_crop",
+   "label": "crop share within 250 m",
+   "min": 0.0,
+   "max": 1.0,
+   "unit": "%",
+   "show": "percent",
+   "mean": 0.13535427166438818,
+   "sd": 0.25476321388834466
+  },
+  {
+   "name": "ring250_range",
+   "label": "range share within 250 m",
+   "min": 0.0,
+   "max": 1.0,
+   "unit": "%",
+   "show": "percent",
+   "mean": 0.12015861032327398,
+   "sd": 0.22225022338658865
+  },
+  {
+   "name": "ring250_bare",
+   "label": "bare share within 250 m",
+   "min": 0.0,
+   "max": 0.23625,
+   "unit": "%",
+   "show": "percent",
+   "mean": 0.00044248675413359576,
+   "sd": 0.004467647972931621
+  },
+  {
+   "name": "ring250_water",
+   "label": "water share within 250 m",
+   "min": 0.0,
+   "max": 1.0,
+   "unit": "%",
+   "show": "percent",
+   "mean": 0.01384758411720298,
+   "sd": 0.04579432288236057
+  },
+  {
+   "name": "ring500_tree",
+   "label": "tree share within 500 m",
+   "min": 0.0,
+   "max": 0.9163333333333334,
+   "unit": "%",
+   "show": "percent",
+   "mean": 0.03208966380324705,
+   "sd": 0.06825003434491192
+  },
+  {
+   "name": "ring500_crop",
+   "label": "crop share within 500 m",
+   "min": 0.0,
+   "max": 1.0,
+   "unit": "%",
+   "show": "percent",
+   "mean": 0.1325955283723398,
+   "sd": 0.22334948098116889
+  },
+  {
+   "name": "ring500_range",
+   "label": "range share within 500 m",
+   "min": 0.0,
+   "max": 0.9995833333333334,
+   "unit": "%",
+   "show": "percent",
+   "mean": 0.12139560420875078,
+   "sd": 0.18321052961007006
+  },
+  {
+   "name": "ring500_bare",
+   "label": "bare share within 500 m",
+   "min": 0.0,
+   "max": 0.050666666666666665,
+   "unit": "%",
+   "show": "percent",
+   "mean": 0.0005108483475824172,
+   "sd": 0.0027691043222373784
+  },
+  {
+   "name": "ring500_water",
+   "label": "water share within 500 m",
+   "min": 0.0,
+   "max": 0.6615833333333332,
+   "unit": "%",
+   "show": "percent",
+   "mean": 0.019697178069334204,
+   "sd": 0.03885762432635627
+  },
+  {
+   "name": "ring250_built",
+   "label": "built share within 250 m",
+   "min": 0.0,
+   "max": 1.0,
+   "unit": "%",
+   "show": "percent",
+   "mean": 0.7049529678222367,
+   "sd": 0.34023795519894035
+  },
+  {
+   "name": "ring500_built",
+   "label": "built share within 500 m",
+   "min": 0.0,
+   "max": 1.0,
+   "unit": "%",
+   "show": "percent",
+   "mean": 0.6912748576792018,
+   "sd": 0.30120668541895024
+  },
+  {
+   "name": "log_dist_built",
+   "label": "distance to built-up",
+   "min": 4.029393602015429,
+   "max": 7.86261879193735,
+   "unit": "m",
+   "show": "expm1",
+   "mean": 4.217567704926924,
+   "sd": 0.47668785917717676
+  },
+  {
+   "name": "log_dist_major",
+   "label": "distance to a major road",
+   "min": 0.0038820119291504197,
+   "max": 8.006700845440367,
+   "unit": "m",
+   "show": "expm1",
+   "mean": 5.930195282116462,
+   "sd": 1.3023296158915267
+  },
+  {
+   "name": "log_dist_any",
+   "label": "distance to any road",
+   "min": 0.00034809142066325073,
+   "max": 7.683846600733311,
+   "unit": "m",
+   "show": "expm1",
+   "mean": 3.1673238323621855,
+   "sd": 1.3248517980336398
+  },
+  {
+   "name": "road_density",
+   "label": "road density (500 m)",
+   "min": 0.0,
+   "max": 39.90869309590986,
+   "unit": "km/km\u00b2",
+   "show": "value",
+   "mean": 15.465729186257159,
+   "sd": 9.332764480401318
+  },
+  {
+   "name": "elev_mean",
+   "label": "elevation",
+   "min": 727.2820983886719,
+   "max": 1021.8036859130859,
+   "unit": "m",
+   "show": "value",
+   "mean": 892.5363974655279,
+   "sd": 36.50359816454704
+  },
+  {
+   "name": "slope_mean",
+   "label": "slope (mean)",
+   "min": 0.0,
+   "max": 38.14545309066772,
+   "unit": "\u00b0",
+   "show": "value",
+   "mean": 2.7328473132752586,
+   "sd": 1.6634506416158137
+  },
+  {
+   "name": "slope_max",
+   "label": "slope (max)",
+   "min": 0.0,
+   "max": 46.32649612426758,
+   "unit": "\u00b0",
+   "show": "value",
+   "mean": 4.559488733035066,
+   "sd": 2.657937165467189
+  },
+  {
+   "name": "log_dist_water",
+   "label": "distance to water",
+   "min": 2.0882857922231177,
+   "max": 7.822446736704856,
+   "unit": "m",
+   "show": "expm1",
+   "mean": 6.202300060925337,
+   "sd": 0.8140734944924218
+  }
+ ],
+ "trivial_share": 0.005,
+ "examples": [
+  {
+   "label": "Industrial building",
+   "bldg_id": 274244,
+   "lon": 77.686568,
+   "lat": 12.811885
+  },
+  {
+   "label": "Apartment block",
+   "bldg_id": 92210,
+   "lon": 77.643464,
+   "lat": 12.91531
+  },
+  {
+   "label": "School",
+   "bldg_id": 1019,
+   "lon": 77.585207,
+   "lat": 12.892404
+  },
+  {
+   "label": "House",
+   "bldg_id": 221345,
+   "lon": 77.734773,
+   "lat": 12.92792
+  }
+ ],
+ "usable_overlay": [
+  [
+   12.689754100140608,
+   77.48976804594025
+  ],
+  [
+   12.969649427778792,
+   77.77057508474338
+  ]
+ ],
+ "built_overlay": [
+  [
+   12.689754100140608,
+   77.48976804594025
+  ],
+  [
+   12.969649427778792,
+   77.77057508474338
+  ]
+ ],
+ "suitability_overlay": [
+  [
+   12.689754100140608,
+   77.48976804594025
+  ],
+  [
+   12.969649427778792,
+   77.77057508474338
+  ]
+ ],
+ "n_sites": 20
+}
